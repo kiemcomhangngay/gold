@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tín hiệu Vàng Bạc Dầu</title>
+<link id="fav" rel="icon" type="image/svg+xml" href="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Orbitron:wght@700;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script>
+  window.CW_DB_URL = "https://my-project-gold-bce37-default-rtdb.asia-southeast1.firebasedatabase.app";
+</script>
+<style>
+:root{
+  --bg:#070b12; --panel:#0d1420; --panel2:#111b2b; --line:#1c2a3f; --text:#e6eef8; --muted:#7f93ad;
+  --gold:#f5c451; --silver:#c9d6e6; --oil:#8b9cff; --win:#12d18e; --loss:#ff5d73; --wait:#f0b44c; --run:#38bdf8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 10% -10%,#132036 0%,transparent 60%),radial-gradient(900px 500px at 110% 10%,#1d1630 0%,transparent 55%),var(--bg);
+  color:var(--text);font-family:"Plus Jakarta Sans",system-ui,sans-serif;min-height:100vh;line-height:1.45}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+header .tick{margin-left:auto}
+@media (max-width:700px){header .tick{margin-left:0}}
+.brand{font-family:Orbitron,sans-serif;font-weight:900;font-size:clamp(18px,4.2vw,30px);letter-spacing:.04em;
+  background:linear-gradient(90deg,#f5c451,#fff3c4 40%,#8be9ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:13px;margin-top:2px}
+.live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:999px}
+.dot{width:9px;height:9px;border-radius:50%;background:#64748b}
+.dot.on{background:var(--win);box-shadow:0 0 0 0 rgba(18,209,142,.6);animation:pulse 1.8s infinite}
+.dot.off{background:var(--loss)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(18,209,142,.55)}70%{box-shadow:0 0 0 10px rgba(18,209,142,0)}100%{box-shadow:0 0 0 0 rgba(18,209,142,0)}}
+.cta{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:#f5c451;padding:2px 10px 2px 4px;border-radius:14px;
+  border:1px solid #2a2410;background:linear-gradient(180deg,rgba(245,196,81,.10),rgba(245,196,81,.02));transition:transform .15s}
+.cta[href]:hover{transform:translateY(-2px) scale(1.04)}
+.cta:not([href]){cursor:default}
+.cta svg{width:64px;height:52px;display:block;overflow:visible}
+.cta .cap{font-size:12px;font-weight:800;line-height:1.25}
+.cta .cap small{display:block;font-weight:600;color:#9fb3c8;font-size:11px}
+.cta .cap b{position:relative;padding-right:14px}
+.cta .cap b::after{content:"";position:absolute;left:calc(100% - 14px);animation:dots 1.6s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.pick{transform-origin:46px 44px;animation:swing 1s ease-in-out infinite}
+@keyframes swing{0%,100%{transform:rotate(-38deg)}55%{transform:rotate(8deg)}62%{transform:rotate(2deg)}}
+.spark{opacity:0;animation:spark 1s ease-out infinite}
+.spark.b{animation-delay:.05s}.spark.c{animation-delay:.1s}
+@keyframes spark{0%,52%{opacity:0;transform:translate(0,0) scale(.4)}60%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1)}}
+.pile{animation:bump 1s ease-in-out infinite;transform-origin:22px 50px}
+@keyframes bump{0%,54%,70%,100%{transform:scale(1)}58%{transform:scale(1.06,.94)}}
+.coin{animation:pop 2s ease-out infinite;opacity:0}
+@keyframes pop{0%,55%{opacity:0;transform:translate(0,0)}62%{opacity:1}85%{opacity:1;transform:translate(-6px,-20px)}100%{opacity:0;transform:translate(-8px,-14px)}}
+@media (prefers-reduced-motion:reduce){.pick,.spark,.pile,.coin,.cta .cap b::after{animation:none}.spark,.coin{opacity:0}}
+.bellw{position:relative}
+.bell{position:relative;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer;display:grid;place-items:center}
+.bell:hover{background:#14223a}
+.bell svg{width:20px;height:20px}
+.bell.ring svg{animation:ring .9s ease-in-out}
+@keyframes ring{0%,100%{transform:rotate(0)}15%{transform:rotate(18deg)}30%{transform:rotate(-16deg)}45%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}75%{transform:rotate(4deg)}}
+.bell .n[hidden]{display:none}
+#snd{font-size:17px}
+#snd.off{animation:nudge 2.4s ease-in-out infinite}
+@keyframes nudge{0%,80%,100%{transform:none}85%{transform:rotate(-12deg)}90%{transform:rotate(12deg)}95%{transform:rotate(-6deg)}}
+.bell .n{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#ff3b4f;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--bg)}
+.np{position:absolute;right:0;top:48px;width:min(360px,calc(100vw - 32px));max-height:70vh;overflow:auto;z-index:50;background:var(--panel2);border:1px solid #26385a;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+@media (max-width:560px){.np{position:fixed;left:16px;right:16px;top:72px;width:auto;max-height:75vh}}
+.nph{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;position:sticky;top:0;background:var(--panel2)}
+.nph button{background:none;border:0;color:var(--run);font-size:12px;cursor:pointer;font-weight:700}
+.ni{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid #152238;align-items:flex-start}
+.ni.unread{background:rgba(56,189,248,.07)}
+.ni.unread .nt::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--run);margin-left:6px;vertical-align:middle}
+.ni .ic{width:34px;height:34px;flex:0 0 34px;border-radius:50%;display:grid;place-items:center;font-size:16px;background:#1b2537}
+.ic.win{background:rgba(18,209,142,.18)}.ic.loss{background:rgba(255,93,115,.18)}.ic.run{background:rgba(56,189,248,.18)}.ic.wait{background:rgba(240,180,76,.18)}.ic.miss{background:rgba(185,163,214,.18)}
+.nt{font-weight:800;font-size:13px}.nx{font-size:12px;color:#c4d2e4}.nw{font-size:11px;color:var(--muted);margin-top:2px}
+.nempty{padding:22px;text-align:center;color:var(--muted);font-size:13px}
+.toasts{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;flex-direction:column;gap:8px;width:min(340px,calc(100vw - 32px))}
+.toast{display:flex;gap:10px;align-items:flex-start;background:var(--panel2);border:1px solid #26385a;border-radius:14px;padding:11px 12px;box-shadow:0 14px 40px rgba(0,0,0,.5);cursor:pointer;animation:tin .35s ease-out}
+.toast.out{animation:tout .3s ease-in forwards}
+@keyframes tin{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes tout{to{opacity:0;transform:translateX(30px)}}
+@media (prefers-reduced-motion:reduce){.bell.ring svg,.toast,.toast.out{animation:none}}
+.tick{display:flex;flex-direction:column;gap:1px;padding:6px 14px;border-radius:14px;border:1px solid #2a2410;
+  background:linear-gradient(180deg,rgba(245,196,81,.10),rgba(245,196,81,.02));min-width:0}
+.tick[hidden]{display:none}
+.tick .lbl{font-family:Orbitron,sans-serif;font-weight:700;color:var(--gold);font-size:10px;letter-spacing:.1em}
+.tick .px{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:22px;line-height:1.15;padding:0 4px;margin-left:-4px;border-radius:6px;transition:background .6s,color .6s}
+.tick .px.up{color:var(--win);background:rgba(18,209,142,.14)}.tick .px.down{color:var(--loss);background:rgba(255,93,115,.14)}
+.tick .row2{display:flex;gap:8px;font-size:11px}
+.tick .ch{font-family:"JetBrains Mono",monospace;font-weight:700}
+.tick .ch.up{color:var(--win)}.tick .ch.down{color:var(--loss)}
+.tick .at{color:var(--muted)}
+.livepnl{font-size:11px;color:var(--muted);font-weight:600}
+.fx{position:fixed;inset:0;z-index:80;pointer-events:none}
+.cry{position:fixed;inset:0;z-index:81;pointer-events:none;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,rgba(40,60,110,.45),rgba(5,8,15,.75));animation:cryin .3s ease-out}
+.cry.out{animation:cryout .5s ease-in forwards}
+.cry .face{font-size:min(38vw,190px);line-height:1;animation:sob .45s ease-in-out infinite alternate;filter:drop-shadow(0 10px 30px rgba(0,0,0,.6))}
+.cry .msg{font-family:Orbitron,sans-serif;font-weight:900;color:#9cc7ff;font-size:clamp(18px,4vw,30px);text-align:center;margin-top:10px;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.cry .sub2{color:#c4d2e4;font-size:14px;text-align:center;margin-top:4px}
+.tear{position:fixed;top:-30px;font-size:26px;animation:fall linear forwards}
+@keyframes sob{from{transform:rotate(-6deg) scale(1)}to{transform:rotate(6deg) scale(1.06)}}
+@keyframes cryin{from{opacity:0}to{opacity:1}}
+@keyframes cryout{to{opacity:0}}
+@keyframes fall{to{transform:translateY(110vh) rotate(25deg)}}
+.boom{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:81;pointer-events:none;font-family:Orbitron,sans-serif;font-weight:900;
+  font-size:clamp(26px,6vw,54px);color:#ffe08a;text-shadow:0 0 18px rgba(245,196,81,.9),0 4px 20px rgba(0,0,0,.7);text-align:center;animation:boomin 3.2s ease-out forwards;white-space:nowrap}
+.boom small{display:block;font-family:"JetBrains Mono",monospace;font-size:.45em;color:#12d18e;text-shadow:0 0 12px rgba(18,209,142,.7)}
+@keyframes boomin{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}20%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%) scale(1)}}
+.dig{position:fixed;inset:0;z-index:81;pointer-events:none;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,rgba(120,80,10,.35),rgba(5,8,15,.72));animation:cryin .3s ease-out}
+.dig.out{animation:cryout .5s ease-in forwards}
+.dig .scene{position:relative;width:min(70vw,300px);height:min(48vw,200px)}
+.dig .who{position:absolute;left:6%;bottom:0;font-size:min(26vw,120px);line-height:1;animation:huff .32s ease-in-out infinite alternate}
+.dig .axe{position:absolute;left:44%;bottom:30%;font-size:min(20vw,92px);line-height:1;transform-origin:15% 85%;animation:hack .32s ease-in infinite alternate}
+.dig .rock{position:absolute;right:0;bottom:0;font-size:min(18vw,80px);line-height:1;animation:bump .32s ease-in-out infinite}
+.dig .msg{font-family:Orbitron,sans-serif;font-weight:900;color:#ffd34d;font-size:clamp(18px,4vw,30px);text-align:center;margin-top:12px;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.dig .sub2{color:#e5d6b0;font-size:14px;text-align:center;margin-top:4px}
+.sweat{position:fixed;font-size:24px;z-index:82;pointer-events:none;animation:fly .9s ease-out forwards}
+@keyframes huff{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(-6px) rotate(3deg)}}
+@keyframes hack{from{transform:rotate(-55deg)}to{transform:rotate(20deg)}}
+/* Leo 05/11: pending order expired without a fill - broken pickaxe, sighing miner */
+.miss{position:fixed;inset:0;z-index:81;pointer-events:none;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,rgba(70,60,90,.45),rgba(5,8,15,.78));animation:cryin .3s ease-out}
+.miss.out{animation:cryout .5s ease-in forwards}
+.miss .scene{position:relative;width:min(70vw,300px);height:min(48vw,200px)}
+.miss .who{position:absolute;left:4%;bottom:0;font-size:min(26vw,120px);line-height:1;animation:slump 3s ease-out forwards}
+.miss .h1,.miss .h2{position:absolute;left:46%;bottom:34%;font-size:min(20vw,92px);line-height:1;transform-origin:50% 50%}
+.miss .h1{clip-path:inset(0 50% 0 0);animation:brkL 1.9s .55s cubic-bezier(.3,.6,.5,1) forwards}
+.miss .h2{clip-path:inset(0 0 0 50%);animation:brkR 1.9s .55s cubic-bezier(.3,.6,.5,1) forwards}
+.miss .crack{position:absolute;left:52%;bottom:46%;font-size:min(12vw,54px);opacity:0;animation:crack .6s .5s ease-out forwards}
+.miss .rock{position:absolute;right:0;bottom:0;font-size:min(18vw,80px);line-height:1;animation:smug 1.2s 1.2s ease-in-out infinite alternate}
+.miss .msg{font-family:Orbitron,sans-serif;font-weight:900;color:#c9b8ff;font-size:clamp(18px,4vw,30px);text-align:center;margin-top:12px;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.miss .sub2{color:#cfc6e4;font-size:14px;text-align:center;margin-top:4px}
+@keyframes slump{0%{transform:translateY(-8px)}20%{transform:translateY(0)}45%{transform:translateY(10px) scale(1,.92)}100%{transform:translateY(12px) scale(1,.9) rotate(-4deg)}}
+@keyframes brkL{0%{transform:rotate(-40deg)}15%{transform:rotate(8deg)}100%{transform:translate(-90px,45px) rotate(-120deg);opacity:.85}}
+@keyframes brkR{0%{transform:rotate(-40deg)}15%{transform:rotate(8deg)}100%{transform:translate(95px,55px) rotate(140deg);opacity:.85}}
+@keyframes crack{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.2)}100%{opacity:0;transform:scale(1.5)}}
+@keyframes smug{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+@keyframes fly{0%{opacity:1;transform:translate(0,0) scale(.6)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.1)}}
+.pend{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;background:rgba(240,180,76,.07);border:1px solid rgba(240,180,76,.25);border-radius:10px;padding:8px 12px}
+.pend .cd{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:18px;color:var(--wait)}
+.pend .cd.soon{color:var(--loss);animation:blink 1s steps(2) infinite}
+.pend small{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.pend .wl{font-size:12px;color:#e5d6b0}
+.hold{flex:1 1 100%;display:flex;align-items:center;gap:8px;font-size:13px;color:#ffd58a;border-bottom:1px dashed rgba(240,180,76,.3);padding-bottom:6px}
+.hold b{color:#fff}.s-HOLD{background:rgba(148,163,184,.18);color:#cbd5e1}
+.pend .pb{flex:1 1 100%;height:5px;border-radius:9px;background:#1a2638;overflow:hidden}.pend .pb>i{display:block;height:100%;background:linear-gradient(90deg,var(--wait),var(--loss))}
+@keyframes blink{50%{opacity:.45}}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:14px}
+.k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.v{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:clamp(19px,2.4vw,26px);margin-top:4px;white-space:nowrap}
+.v.win{color:var(--win)}.v.loss{color:var(--loss)}.v.run{color:var(--run)}.v.wait{color:var(--wait)}
+.bar{height:6px;border-radius:9px;background:#1a2638;margin-top:10px;overflow:hidden}.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--win),#5eead4)}
+.pairs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-bottom:18px}
+.pair h3{font-family:Orbitron,sans-serif;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.pair .meta{color:var(--muted);font-size:12px;margin-top:4px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;min-height:16px}
+.dots span{width:14px;height:14px;border-radius:4px}
+.dots .w{background:var(--win)}.dots .l{background:var(--loss)}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
+.tab{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer}
+.tab.on{color:#0b1220;background:var(--gold);border-color:var(--gold)}
+.chip{background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 11px;border-radius:999px;font-size:12px;cursor:pointer}
+.chip.on{color:var(--text);border-color:#3b5277;background:#14223a}
+.histbar{display:none;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.histbar.show{display:flex}
+.histbar select,.histbar input{background:#0d1626;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;color-scheme:dark}
+.histbar .cus{display:none;gap:6px;align-items:center;color:var(--muted);font-size:12px}
+.histbar .cus.show{display:inline-flex}
+.histsum{width:100%;font-size:12px;color:var(--muted);margin-top:2px}
+.histsum b.w{color:var(--win)} .histsum b.l{color:var(--loss)}
+.pager{display:flex;justify-content:center;align-items:center;gap:10px;margin:12px 0 4px;font-size:13px;color:var(--muted)}
+.pager button{background:transparent;border:1px solid var(--line);color:var(--text);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px}
+.pager button:disabled{opacity:.35;cursor:default}
+.list{display:grid;gap:10px}
+.trade{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:start}
+.trade .top{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.name{font-family:Orbitron,sans-serif;font-weight:700}
+.badge{font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px;letter-spacing:.03em}
+.b-buy{background:rgba(18,209,142,.14);color:var(--win)}.b-sell{background:rgba(255,93,115,.14);color:var(--loss)}
+.s-TP,.s-LOI{background:rgba(18,209,142,.16);color:var(--win)}.s-SL,.s-LO{background:rgba(255,93,115,.16);color:var(--loss)}
+.s-CHAY{background:rgba(56,189,248,.15);color:var(--run)}.s-CHO{background:rgba(240,180,76,.15);color:var(--wait)}
+.s-HUY,.s-HOA{background:#1b2537;color:var(--muted)}
+.s-HH{background:#2a2233;color:#b9a3d6}
+.v.exp{color:#b9a3d6}
+.levels{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px}
+.lv{background:#0a111c;border:1px solid var(--line);border-radius:10px;padding:7px 9px}
+.lv b{display:block;font-family:"JetBrains Mono",monospace;font-size:14px}
+.lv small{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.res{font-family:"JetBrains Mono",monospace;font-weight:700;text-align:right}
+.res.up{color:var(--win)}.res.down{color:var(--loss)}
+.when{color:var(--muted);font-size:12px}
+/* Leo 06/11: history grouped by VN day, one compact row per trade */
+.day{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.day>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px}
+.day>summary::-webkit-details-marker{display:none}
+.day>summary .dt{font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px}
+.day>summary .dt:before{content:"▸";color:var(--muted);transition:transform .15s;display:inline-block}
+.day[open]>summary .dt:before{transform:rotate(90deg)}
+.day>summary .cnt{color:var(--muted);font-size:12px;margin:2px 0 0 18px}
+.day>summary .cnt b.w{color:var(--win)}.day>summary .cnt b.l{color:var(--loss)}
+.day>summary .sum{margin-left:auto;font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;text-align:right}
+.day>summary .sum.up{color:var(--win)}.day>summary .sum.down{color:var(--loss)}
+.day>summary .sum small{display:block;font-size:11px;opacity:.85}
+.rows{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 14px;border-top:1px solid rgba(28,42,63,.55)}
+.row:first-child{border-top:0}
+.row .tm{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--text);line-height:1.25}
+.row .tm small{display:block;color:var(--muted);font-size:11px}
+.row .mid{min-width:0}
+.row .mid .top{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.row .px2{font-family:"JetBrains Mono",monospace;font-size:13px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .px2 i{font-style:normal;color:var(--muted)}
+.row .lvl{color:var(--muted);font-size:11px;margin-top:2px}
+.row .res{font-size:14px}
+.row .res small{display:block;font-size:11px}
+.row.dim{opacity:.7}
+@media (max-width:520px){.row{grid-template-columns:44px minmax(0,1fr) auto;padding:10px 12px}.row .lvl{display:none}}
+.empty{color:var(--muted);text-align:center;padding:26px;border:1px dashed var(--line);border-radius:14px}
+footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
+.gold{color:var(--gold)}.silver{color:var(--silver)}.oil{color:var(--oil)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brand" id="title">TÍN HIỆU VÀNG · BẠC · DẦU</div>
+      <div class="sub">Dữ liệu đẩy trực tiếp từ bot</div>
+    </div>
+    <div class="tick" id="tick" hidden title="Giá vàng trên sàn BingX">
+      <div class="lbl">GIÁ VÀNG · BINGX</div>
+      <div><span class="px" id="tickPx">–</span></div>
+      <div class="row2"><span class="ch" id="tickCh"></span><span class="at" id="tickAt"></span></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <a id="cta" class="cta" target="_blank" rel="noopener" title="Bot đang đào vàng">
+        <svg viewBox="0 0 64 52" aria-hidden="true">
+          <defs>
+            <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#d98e04"/></linearGradient>
+          </defs>
+          <ellipse cx="24" cy="50" rx="22" ry="2.5" fill="#000" opacity=".35"/>
+          <g class="pile">
+            <path d="M4 50 L10 38 L17 34 L24 26 L31 33 L38 36 L44 50 Z" fill="url(#gold)" stroke="#8a5a00" stroke-width="1.2" stroke-linejoin="round"/>
+            <path d="M14 40 l4 -3 M24 31 l3 3 M30 41 l4 -2" stroke="#fff6c9" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+          </g>
+          <circle class="coin" cx="24" cy="26" r="3.6" fill="url(#gold)" stroke="#8a5a00" stroke-width="1"/>
+          <g class="pick">
+            <line x1="46" y1="44" x2="30" y2="14" stroke="#a0622d" stroke-width="3.4" stroke-linecap="round"/>
+            <path d="M20 12 Q31 3 42 12 Q31 9 20 12 Z" fill="#cfd8e3" stroke="#6b7a8c" stroke-width="1.2" stroke-linejoin="round"/>
+          </g>
+          <circle class="spark" cx="26" cy="27" r="1.8" fill="#fff3a8" style="--dx:-10px;--dy:-10px"/>
+          <circle class="spark b" cx="27" cy="27" r="1.5" fill="#ffd34d" style="--dx:6px;--dy:-12px"/>
+          <circle class="spark c" cx="25" cy="28" r="1.3" fill="#fff" style="--dx:-2px;--dy:-15px"/>
+        </svg>
+        <span class="cap"><b>Đang đào vàng</b><small id="ctaSub">bot chạy 24/7</small></span>
+      </a>
+      <button id="snd" class="bell" type="button" title="Bật âm thanh" aria-label="Âm thanh">🔇</button>
+      <div class="bellw">
+        <button id="bell" class="bell" type="button" aria-label="Thông báo" title="Thông báo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span id="bellN" class="n" hidden></span>
+        </button>
+        <div id="np" class="np" hidden><div class="nph">Thông báo<button id="npAll" type="button">Đánh dấu đã đọc</button></div><div id="npList"></div></div>
+      </div>
+      <div class="live"><span class="dot" id="dot"></span><span id="liveText">Đang kết nối…</span></div>
+    </div>
+  </header>
+
+  <section class="stats" id="stats"></section>
+  <section class="pairs" id="pairs"></section>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="open">Đang chạy & lệnh chờ</button>
+    <button class="tab" data-tab="hist">Lịch sử</button>
+  </div>
+  <div class="tabs" id="filters">
+    <button class="chip on" data-f="ALL">Tất cả</button>
+    <button class="chip" data-f="GOLD">Vàng</button>
+  </div>
+  <div class="histbar" id="histbar">
+    <select id="hfPeriod" aria-label="Thời gian">
+      <option value="all">Mọi lúc</option><option value="today">Hôm nay</option><option value="7">7 ngày</option>
+      <option value="30">30 ngày</option><option value="month">Tháng này</option><option value="prev">Tháng trước</option><option value="custom">Tùy chọn…</option>
+    </select>
+    <span class="cus" id="hfCustom">từ <input type="date" id="hfFrom"> đến <input type="date" id="hfTo"></span>
+    <select id="hfSide" aria-label="Chiều"><option value="all">Cả MUA và BÁN</option><option value="MUA">Chỉ MUA</option><option value="BAN">Chỉ BÁN</option></select>
+    <select id="hfRes" aria-label="Kết quả"><option value="all">Mọi kết quả</option><option value="win">Thắng</option><option value="loss">Thua</option><option value="miss">Không khớp</option></select>
+    <select id="hfPer" aria-label="Số ngày mỗi trang"><option value="5">5 ngày/trang</option><option value="10">10 ngày/trang</option><option value="30">30 ngày/trang</option></select>
+    <div class="histsum" id="histsum"></div>
+  </div>
+  <section class="list" id="list"></section>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <footer>Kết quả quá khứ không bảo đảm lợi nhuận sau này. Giao dịch đòn bẩy có rủi ro mất vốn.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var qs = new URLSearchParams(location.search);
+  var DB = (qs.get("db") || window.CW_DB_URL || "").trim().replace(/\/+$/, "");
+  var NODE = "cyberwhale";
+  var state = null, tab = "open", filter = "ALL", connected = false;
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+  function num(v, d) { if (v == null || isNaN(v)) return "–"; var a = Math.abs(v); var dd = d != null ? d : (a >= 1000 ? 2 : a >= 10 ? 2 : 3); return Number(v).toLocaleString("en-US", {minimumFractionDigits: dd, maximumFractionDigits: dd}); }
+  function vn(ms) { if (!ms) return ""; return new Date(ms).toLocaleString("vi-VN", {timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit"}); }
+  function cls(m) { return m === "GOLD" ? "gold" : m === "SILVER" ? "silver" : m === "OIL" ? "oil" : ""; }
+  var STATUS = {TP: "TP ✓", LOI: "ĐÓNG LỜI", SL: "SL", LO: "ĐÓNG LỖ", HOA: "HÒA VỐN", CHAY: "ĐANG CHẠY", CHO: "LỆNH CHỜ", HH: "HẾT HẠN", HUY: "ĐÃ HỦY"};
+
+  function setLive(on, text) {
+    connected = on;
+    document.getElementById("dot").className = "dot " + (on ? "on" : "off");
+    document.getElementById("liveText").textContent = text;
+  }
+
+  function stat(k, v, c, extra) { return '<div class="card"><div class="k">' + k + '</div><div class="v ' + (c || "") + '">' + v + "</div>" + (extra || "") + "</div>"; }
+
+  function render() {
+    if (!state) return;
+    var s = state.stats || {};
+    if (state.title) { document.getElementById("title").textContent = state.title; baseTitle = state.title; }
+    var cta = document.getElementById("cta");
+    if (state.link && /^https?:\/\//i.test(state.link)) { cta.href = state.link; cta.title = "Vào nhóm nhận tín hiệu"; document.getElementById("ctaSub").textContent = "bấm vào nhóm nhận kèo"; }
+    else { cta.removeAttribute("href"); cta.title = "Bot đang đào vàng"; document.getElementById("ctaSub").textContent = "bot chạy 24/7"; }
+    var wr = s.winRate || 0;
+    var html = stat("Tỷ lệ thắng", num(wr, 1) + "%", "win", '<div class="bar"><i style="width:' + Math.min(100, wr) + '%"></i></div>')
+      + stat("Lệnh thắng", s.tp || 0, "win") + stat("Lệnh thua", s.sl || 0, "loss")
+      + stat(s.since ? "Chiến dịch kiếm cơm chạy từ " + new Date(s.since + 7*3600e3).toISOString().slice(5,10).split("-").reverse().join("/") : "Tổng tín hiệu " + (s.days || 60) + " ngày", (s.signals || 0) + (s.since ? ' <small style="font-size:.5em;opacity:.7">tín hiệu</small>' : "")) + stat("Đang chạy", s.running || 0, "run") + stat("Lệnh chờ", s.pending || 0, "wait")
+      + stat("Hết hạn chờ", s.expired || 0, "exp");
+    if (state.showUsd && s.netUsd != null) html += stat("Lãi ròng", (s.netUsd >= 0 ? "+" : "") + num(s.netUsd, 2) + "$", s.netUsd >= 0 ? "win" : "loss");
+    document.getElementById("stats").innerHTML = html;
+    drawPrice();
+    notify();
+
+    var pairs = state.symbols || {}, ph = "";
+    Object.keys(pairs).forEach(function (key) {
+      var p = pairs[key] || {}, last = (p.last || []).slice().reverse();
+      ph += '<div class="card pair"><h3><span class="' + cls(key) + '">' + esc(p.name || key) + '</span><span class="res up">' + num(p.winRate || 0, 1) + "%</span></h3>"
+        + '<div class="meta">Thắng ' + (p.tp || 0) + " · Thua " + (p.sl || 0) + " · Đang chạy " + (p.running || 0) + " · Chờ " + (p.pending || 0) + (p.expired ? " · Hết hạn " + p.expired : "")
+        + (state.showUsd && p.netUsd != null ? " · " + (p.netUsd >= 0 ? "+" : "") + num(p.netUsd, 2) + "$" : "") + "</div>"
+        + '<div class="dots" title="20 lệnh gần nhất, mới nhất bên phải">' + last.map(function (r) { return '<span class="' + (r === "TP" ? "w" : "l") + '"></span>'; }).join("") + "</div></div>";
+    });
+    document.getElementById("pairs").innerHTML = ph;
+
+    var trades = (state.trades || []).filter(function (t) {
+      if (!t) return false;
+      if (filter !== "ALL" && t.metal !== filter) return false;
+      var open = t.status === "CHAY" || t.status === "CHO";
+      return tab === "open" ? open : !open;
+    });
+    document.getElementById("histbar").classList.toggle("show", tab === "hist");
+    if (!trades.length) {
+      document.getElementById("histsum").innerHTML = "";
+      document.getElementById("list").innerHTML = '<div class="empty">' + (tab === "open" ? "Hiện chưa có lệnh đang chạy hay lệnh chờ." : "Chưa có lệnh nào trong lịch sử.") + "</div>";
+      return;
+    }
+    if (tab === "hist") { document.getElementById("list").innerHTML = histHtml(histFilter(trades)); return; }
+    document.getElementById("list").innerHTML = trades.map(function (t) {
+      var buy = t.side === "MUA", res = "", lp = livePnl(t);
+      if (lp) res = '<div class="res ' + (lp.move >= 0 ? "up" : "down") + '"><div class="livepnl">tạm tính</div>' + (lp.move >= 0 ? "+" : "") + num(lp.move)
+        + (lp.pct != null ? '<div style="font-size:12px">' + (lp.pct >= 0 ? "+" : "") + num(lp.pct, 1) + "% PnL</div>" : "") + "</div>";
+      else if (t.move != null) res = '<div class="res ' + (t.move >= 0 ? "up" : "down") + '">' + (t.move >= 0 ? "+" : "") + num(t.move)
+        + (t.pnlPct != null ? '<div style="font-size:12px">' + (t.pnlPct >= 0 ? "+" : "") + num(t.pnlPct, 1) + "% PnL</div>" : "")
+        + (t.netUsd != null ? '<div style="font-size:12px">' + (t.netUsd >= 0 ? "+" : "") + num(t.netUsd, 2) + "$</div>" : "") + "</div>";
+      var when = t.status === "HH" ? "Đặt lệnh chờ " + vn(t.signalAt) + (t.closedAt ? " · Hết hạn " + vn(t.closedAt) : "")
+        : t.status === "CHO" || !t.fillAt ? "Đặt lệnh chờ " + vn(t.signalAt)
+        : "Mở lệnh " + vn(t.fillAt) + (t.closedAt ? " · Đóng " + vn(t.closedAt) : "");
+      return '<div class="card trade"><div><div class="top"><span class="name ' + cls(t.metal) + '">' + esc(t.name) + "</span>"
+        + '<span class="badge ' + (buy ? "b-buy" : "b-sell") + '">' + (buy ? "▲ MUA" : "▼ BÁN") + "</span>"
+        + '<span class="badge s-' + esc(t.status) + '">' + (STATUS[t.status] || esc(t.status)) + "</span>"
+        + (t.status === "CHO" && t.hold ? '<span class="badge s-HOLD">⏸ TẠM HỦY</span>' : "")
+        + (t.dca ? '<span class="badge s-HUY">DCA x' + t.dca + "</span>" : "") + "</div>"
+        + '<div class="when">' + when + "</div></div>" + res
+        + '<div class="levels"><div class="lv"><small>Giá vào</small><b>' + num(t.entry) + '</b></div><div class="lv"><small>Chốt lời</small><b style="color:var(--win)">' + num(t.tp)
+        + '</b></div><div class="lv"><small>Cắt lỗ</small><b style="color:var(--loss)">' + num(t.sl) + "</b></div>"
+        + (t.exit != null ? '<div class="lv"><small>Giá ra</small><b>' + num(t.exit) + "</b></div>" : "") + "</div>"
+        + (t.status === "CHO" ? waitBox(t) : "") + "</div>";
+    }).join("");
+  }
+
+
+
+
+  // ---- Leo 06/11: history grouped by VN day (newest day open, the rest folded; what the viewer opens stays open) ----
+  var dayOpen = {}, WD = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  function vnKey(ms) { return new Date(ms + 7 * 3600e3).toISOString().slice(0, 10); }
+  function hm(ms) { return ms ? new Date(ms + 7 * 3600e3).toISOString().slice(11, 16) : ""; }
+  function dayLabel(key) {
+    var today = vnKey(Date.now()), y = vnKey(Date.now() - 864e5), d = new Date(key + "T00:00:00Z");
+    var dm = key.slice(8, 10) + "/" + key.slice(5, 7);
+    return (key === today ? "Hôm nay" : key === y ? "Hôm qua" : WD[d.getUTCDay()]) + " · " + dm;
+  }
+  function sign(v, d) { return (v >= 0 ? "+" : "") + num(v, d); }
+  function histRow(t) {
+    var buy = t.side === "MUA", miss = t.status === "HH" || t.status === "HUY";
+    var t1 = miss ? hm(t.signalAt) : hm(t.fillAt || t.signalAt), t2 = miss ? hm(t.closedAt) : hm(t.closedAt);
+    // Leo 09/11: a trade opened on another day than it closed shows that day above its open time (07/11 / 16:15 / 06:00).
+    var openAt = miss ? t.signalAt : (t.fillAt || t.signalAt);
+    if (openAt && t.closedAt && vnKey(openAt) !== vnKey(t.closedAt)) { var ok = vnKey(openAt); t1 = '<small style="color:var(--gold,#f5c451)">' + ok.slice(8, 10) + "/" + ok.slice(5, 7) + "</small>" + t1; }
+    var res = "";
+    if (t.move != null) res = '<div class="res ' + (t.move >= 0 ? "up" : "down") + '">' + sign(t.move)
+      + (t.pnlPct != null ? "<small>" + sign(t.pnlPct, 1) + "%</small>" : "")
+      + (state.showUsd && t.netUsd != null ? "<small>" + sign(t.netUsd, 2) + "$</small>" : "") + "</div>";
+    else res = '<div class="res" style="color:var(--muted)">–</div>';
+    var px = miss ? "<i>chờ</i> " + num(t.entry) + " <i>· không khớp</i>"
+      : num(t.entry) + " <i>→</i> " + (t.exit != null ? num(t.exit) : "–");
+    return '<div class="row' + (miss ? " dim" : "") + '"><div class="tm">' + t1 + (t2 && t2 !== t1 ? "<small>" + t2 + "</small>" : "") + "</div>"
+      + '<div class="mid"><div class="top"><span class="badge ' + (buy ? "b-buy" : "b-sell") + '">' + (buy ? "▲ MUA" : "▼ BÁN") + "</span>"
+      + '<span class="badge s-' + esc(t.status) + '">' + (STATUS[t.status] || esc(t.status)) + "</span>"
+      + (t.dca ? '<span class="badge s-HUY">DCA x' + t.dca + "</span>" : "")
+      + (filter === "ALL" && t.metal !== "GOLD" ? '<span class="name ' + cls(t.metal) + '" style="font-size:12px">' + esc(t.name) + "</span>" : "") + "</div>"
+      + '<div class="px2">' + px + "</div>"
+      + '<div class="lvl">TP <span style="color:var(--win)">' + num(t.tp) + '</span> · SL <span style="color:var(--loss)">' + num(t.sl) + "</span></div></div>"
+      + res + "</div>";
+  }
+  // ---- Leo 09/11: history filters (time, side, result) and pages of N days ----
+  var hf = { period: "all", from: "", to: "", side: "all", res: "all", per: 5, page: 1 };
+  try { var savedHf = JSON.parse(localStorage.getItem("cw_hist_filter") || "null"); if (savedHf) { ["period", "from", "to", "side", "res", "per"].forEach(function (k) { if (savedHf[k] != null) hf[k] = savedHf[k]; }); } } catch (e) {}
+  function saveHf() { try { localStorage.setItem("cw_hist_filter", JSON.stringify(hf)); } catch (e) {} }
+  function isMiss(t) { return t.status === "HH" || t.status === "HUY"; }
+  function histFilter(trades) {
+    var today = vnKey(Date.now()), from = "", to = "";
+    if (hf.period === "today") from = to = today;
+    else if (hf.period === "7" || hf.period === "30") { from = vnKey(Date.now() - (Number(hf.period) - 1) * 864e5); to = today; }
+    else if (hf.period === "month") { from = today.slice(0, 8) + "01"; to = today; }
+    else if (hf.period === "prev") { var d = new Date(today.slice(0, 8) + "01T00:00:00Z"); d.setUTCDate(0); to = d.toISOString().slice(0, 10); from = to.slice(0, 8) + "01"; }
+    else if (hf.period === "custom") { from = hf.from || ""; to = hf.to || ""; }
+    var out = trades.filter(function (t) {
+      var k = vnKey(t.closedAt || t.fillAt || t.signalAt || 0);
+      if (from && k < from) return false;
+      if (to && k > to) return false;
+      if (hf.side === "MUA" && t.side !== "MUA") return false;
+      if (hf.side === "BAN" && t.side === "MUA") return false;
+      if (hf.res === "miss") return isMiss(t);
+      if (hf.res === "win") return !isMiss(t) && t.move != null && t.move > 0;
+      if (hf.res === "loss") return !isMiss(t) && t.move != null && t.move < 0;
+      return true;
+    });
+    var win = 0, loss = 0, miss = 0, mv = 0, usd = 0, hasUsd = false;
+    out.forEach(function (t) {
+      if (isMiss(t)) { miss++; return; }
+      if (t.move != null) { mv += t.move; if (t.move > 0) win++; else if (t.move < 0) loss++; }
+      if (t.netUsd != null) { usd += t.netUsd; hasUsd = true; }
+    });
+    var closed = win + loss;
+    document.getElementById("histsum").innerHTML = out.length
+      ? out.length + " lệnh · <b class=\"w\">" + win + " thắng</b> · <b class=\"l\">" + loss + " thua</b>" + (miss ? " · " + miss + " không khớp" : "")
+        + (closed ? " · thắng " + Math.round(win * 100 / closed) + "%" + (state.showUsd && hasUsd ? " · lợi nhuận " + sign(usd, 2) + "$" : "") : "")
+      : "Không có lệnh nào khớp bộ lọc.";
+    return out;
+  }
+  function histHtml(trades) {
+    if (!trades.length) return '<div class="empty">Không có lệnh nào khớp bộ lọc.</div>';
+    var groups = [], by = {};
+    trades.forEach(function (t) {
+      var k = vnKey(t.closedAt || t.fillAt || t.signalAt || 0);
+      if (!by[k]) { by[k] = []; groups.push(k); }
+      by[k].push(t);
+    });
+    groups.sort().reverse();
+    var per = Number(hf.per) || 5, pages = Math.max(1, Math.ceil(groups.length / per));
+    if (hf.page > pages) hf.page = pages;
+    if (hf.page < 1) hf.page = 1;
+    var first = (hf.page - 1) * per;
+    var pager = pages > 1 ? '<div class="pager"><button data-pg="-1"' + (hf.page <= 1 ? " disabled" : "") + '>‹ Trước</button><span>Trang ' + hf.page + " / " + pages
+      + '</span><button data-pg="1"' + (hf.page >= pages ? " disabled" : "") + ">Sau ›</button></div>" : "";
+    return groups.slice(first, first + per).map(function (k, i) {
+      i += first;
+      var list = by[k].slice().sort(function (a, b) { return (b.closedAt || b.fillAt || b.signalAt || 0) - (a.closedAt || a.fillAt || a.signalAt || 0); });
+      var win = 0, loss = 0, miss = 0, mv = 0, usd = 0, hasUsd = false;
+      list.forEach(function (t) {
+        if (t.status === "HH" || t.status === "HUY") { miss++; return; }
+        if (t.move != null) { mv += t.move; if (t.move > 0) win++; else if (t.move < 0) loss++; }
+        if (t.netUsd != null) { usd += t.netUsd; hasUsd = true; }
+      });
+      var open = dayOpen[k] != null ? dayOpen[k] : i === 0;
+      var cnt = [win ? '<b class="w">' + win + " thắng</b>" : "", loss ? '<b class="l">' + loss + " thua</b>" : "", miss ? miss + " không khớp" : ""].filter(Boolean).join(" · ");
+      var sum = win + loss ? '<div class="sum ' + (mv >= 0 ? "up" : "down") + '">' + sign(mv) + (state.showUsd && hasUsd ? "<small>" + sign(usd, 2) + "$</small>" : "") + "</div>" : "";
+      return '<details class="day" data-day="' + k + '"' + (open ? " open" : "") + '><summary><div><div class="dt">' + dayLabel(k) + '</div><div class="cnt">' + cnt + "</div></div>" + sum + "</summary>"
+        + '<div class="rows">' + list.map(histRow).join("") + "</div></details>";
+    }).join("") + pager;
+  }
+  document.addEventListener("toggle", function (e) {
+    var el = e.target;
+    if (el && el.classList && el.classList.contains("day")) dayOpen[el.dataset.day] = el.open;
+  }, true);
+
+  // ---- Leo 05/11: pending order countdown to its deadline ----
+  function hms(sec) {
+    sec = Math.max(0, Math.floor(sec)); var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s2 = sec % 60;
+    var p = function (x) { return (x < 10 ? "0" : "") + x; };
+    return (d ? d + "n " : "") + p(h) + ":" + p(m) + ":" + p(s2);
+  }
+  // Leo 06/11: why the order is not on the exchange right now and when it comes back.
+  function holdLine(t) {
+    if (t.hold === "TIN") return '<div class="hold">⏸ Tạm hủy trên sàn vì giờ tin · ' + (t.holdUntil ? "đặt lại lúc <b>" + vn(t.holdUntil) + "</b>" : "đặt lại khi hết giờ tin") + " (nếu còn hạn)</div>";
+    if (t.hold === "DCA") return '<div class="hold">⏸ Tạm hủy trên sàn để lấy vốn DCA · đặt lại khi lệnh DCA đóng (nếu còn hạn)</div>';
+    return "";
+  }
+  function waitBox(t) {
+    if (!t.expiresAt) return '<div class="pend">' + holdLine(t) + '<div><small>Hết hạn</small><div class="wl">Chờ tới khi khớp</div></div></div>';
+    var left = (t.expiresAt - Date.now()) / 1000, all = Math.max(1, (t.expiresAt - t.signalAt) / 1000);
+    return '<div class="pend">' + holdLine(t) + '<div><small>Còn lại để khớp</small><div class="cd' + (left < 1800 ? " soon" : "") + '" data-exp="' + t.expiresAt + '">' + hms(left) + "</div></div>"
+      + '<div><small>Hết hạn lúc</small><div class="wl">' + vn(t.expiresAt) + "</div></div>"
+      + '<div class="pb"><i data-from="' + t.signalAt + '" data-exp="' + t.expiresAt + '" style="width:' + Math.min(100, Math.max(0, 100 - left / all * 100)) + '%"></i></div></div>';
+  }
+  setInterval(function () {
+    var now = Date.now();
+    document.querySelectorAll(".pend .cd[data-exp]").forEach(function (el) {
+      var left = (+el.dataset.exp - now) / 1000;
+      el.textContent = left > 0 ? hms(left) : "Hết hạn"; el.classList.toggle("soon", left < 1800);
+    });
+    document.querySelectorAll(".pend .pb>i").forEach(function (el) {
+      var a = +el.dataset.from, b = +el.dataset.exp; el.style.width = Math.min(100, Math.max(0, (now - a) / Math.max(1, b - a) * 100)) + "%";
+    });
+  }, 1000);
+  // ---- Leo 04/11: live gold price (the bot sends it about every 3 s) ----
+  var pxPrev = null, pxOpen = null, pxFlash = null;
+  function drawPrice() {
+    var pr = state && state.price, box = document.getElementById("tick");
+    if (!pr || !pr.GOLD) { box.hidden = true; return; }
+    box.hidden = false;
+    var p = pr.GOLD, el = document.getElementById("tickPx");
+    if (pxOpen == null) pxOpen = p;
+    if (pxPrev != null && p !== pxPrev) {
+      el.className = "px " + (p > pxPrev ? "up" : "down");
+      clearTimeout(pxFlash); pxFlash = setTimeout(function () { el.className = "px"; }, 900);
+    }
+    pxPrev = p;
+    el.textContent = num(p, 2);
+    var d = p - pxOpen, ch = document.getElementById("tickCh");
+    ch.className = "ch " + (d > 0 ? "up" : d < 0 ? "down" : "");
+    ch.textContent = (d >= 0 ? "▲ +" : "▼ ") + num(d, 2); ch.title = "so với lúc mở trang";
+    tickClock();
+  }
+  // Leo 06/11: the clock under the price runs every second (VN time); an old price still says "giá cũ".
+  function tickClock() {
+    var pr = state && state.price, at = document.getElementById("tickAt");
+    if (!pr || !pr.GOLD || !at) return;
+    var age = pr.at ? (Date.now() - pr.at) / 1000 : 0;
+    at.textContent = age > 90 ? "giá cũ · " + vn(pr.at) : new Date().toLocaleTimeString("vi-VN", {timeZone: "Asia/Ho_Chi_Minh"});
+  }
+  setInterval(tickClock, 1000);
+  function livePnl(t) {
+    var p = state && state.price && state.price[t.metal];
+    if (t.status !== "CHAY" || !p || !t.entry) return null;
+    var mv = t.side === "MUA" ? p - t.entry : t.entry - p;
+    return {move: mv, pct: t.lev ? mv / t.entry * t.lev * 100 : null};
+  }
+
+
+  // ---- sounds (made in the browser, no files). Browsers only allow sound after one click on the page. ----
+  var soundOn = true;
+  try { soundOn = localStorage.getItem("cw_sound") !== "0"; } catch (_) {}
+  function ac() {
+    try { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === "suspended") audio.resume(); } catch (_) {}
+    return audio;
+  }
+  function canPlay() { return soundOn && audio && audio.state === "running"; }
+  function sndBtn() {
+    var b = document.getElementById("snd"), live = canPlay();
+    b.textContent = live ? "🔊" : "🔇"; b.classList.toggle("off", !live);
+    b.title = !soundOn ? "Âm thanh đang tắt, bấm để bật" : live ? "Âm thanh đang bật, bấm để tắt" : "Bấm để bật âm thanh";
+  }
+  document.getElementById("snd").onclick = function (e) {
+    e.stopPropagation();
+    if (canPlay()) soundOn = false; else { soundOn = true; ac(); }
+    try { localStorage.setItem("cw_sound", soundOn ? "1" : "0"); } catch (_) {}
+    setTimeout(sndBtn, 60); if (soundOn) setTimeout(beep, 80);
+  };
+  setTimeout(sndBtn, 0); setInterval(sndBtn, 3000);
+  function noiseBuf(a, sec) {
+    var b = a.createBuffer(1, a.sampleRate * sec, a.sampleRate), d = b.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  }
+  function boomAt(a, t, vol) {
+    var src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+    src.buffer = noiseBuf(a, 1.6); f.type = "lowpass"; f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(140, t + 1.2);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    src.connect(f); f.connect(g); g.connect(a.destination); src.start(t); src.stop(t + 1.6);
+    for (var k = 0; k < 14; k++) { // crackle
+      var c = a.createBufferSource(), cg = a.createGain(), hp = a.createBiquadFilter(), ct = t + 0.25 + Math.random() * 0.9;
+      c.buffer = noiseBuf(a, 0.04); hp.type = "highpass"; hp.frequency.value = 3000;
+      cg.gain.setValueAtTime(vol * 0.35, ct); cg.gain.exponentialRampToValueAtTime(0.0001, ct + 0.035);
+      c.connect(hp); hp.connect(cg); cg.connect(a.destination); c.start(ct); c.stop(ct + 0.05);
+    }
+  }
+  function whistleAt(a, t) {
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(2400, t + 0.45);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.55);
+  }
+  function soundWin(rocketTimes) {
+    if (!canPlay()) return;
+    try {
+      var a = audio, now = a.currentTime;
+      rocketTimes.forEach(function (ms) { var t = now + ms / 1000; whistleAt(a, t); boomAt(a, t + 0.5, 0.5 + Math.random() * 0.3); });
+      // a short "ta-da"
+      [523.25, 659.25, 783.99, 1046.5].forEach(function (fq, i) {
+        var o = a.createOscillator(), g = a.createGain(), t = now + 0.05 + i * 0.09;
+        o.type = "triangle"; o.frequency.value = fq;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + (i === 3 ? 0.9 : 0.25));
+        o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 1);
+      });
+    } catch (_) {}
+  }
+  function soundLose() { // the classic sad "wah wah wah waaah"
+    if (!canPlay()) return;
+    try {
+      var a = audio, now = a.currentTime, notes = [[392, 0, .45], [370, .5, .45], [349.2, 1, .45], [329.6, 1.5, 1.4]];
+      notes.forEach(function (n) {
+        var o = a.createOscillator(), f = a.createBiquadFilter(), g = a.createGain(), lfo = a.createOscillator(), lg = a.createGain(), t = now + n[1];
+        o.type = "sawtooth"; o.frequency.setValueAtTime(n[0], t);
+        if (n[2] > 1) { o.frequency.linearRampToValueAtTime(n[0] * 0.94, t + n[2]); lfo.frequency.value = 6; lg.gain.value = 7; lfo.connect(lg); lg.connect(o.frequency); lfo.start(t); lfo.stop(t + n[2]); }
+        f.type = "lowpass"; f.frequency.setValueAtTime(500, t); f.frequency.linearRampToValueAtTime(1500, t + 0.12); f.frequency.linearRampToValueAtTime(600, t + n[2]);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.04); g.gain.setValueAtTime(0.16, t + n[2] - 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t + n[2]);
+        o.connect(f); f.connect(g); g.connect(a.destination); o.start(t); o.stop(t + n[2] + 0.02);
+      });
+    } catch (_) {}
+  }
+  // ---- Leo 04/11: a win sets off fireworks, a loss shows a crying meme ----
+  var fxBusy = false;
+  function fireworks(text, sub) {
+    var cv = document.createElement("canvas"), ctx = cv.getContext("2d"), W, H, parts = [], rockets = [], t0 = performance.now();
+    cv.className = "fx"; document.body.appendChild(cv);
+    function size() { W = cv.width = innerWidth * devicePixelRatio; H = cv.height = innerHeight * devicePixelRatio; }
+    size(); addEventListener("resize", size);
+    var COLS = ["#ffd34d", "#ff5d73", "#12d18e", "#38bdf8", "#c084fc", "#fff3a8", "#f97316"];
+    function burst(x, y) {
+      var c = COLS[Math.random() * COLS.length | 0], c2 = COLS[Math.random() * COLS.length | 0], n = 70 + Math.random() * 40;
+      for (var i = 0; i < n; i++) {
+        var a = Math.PI * 2 * i / n, v = (2 + Math.random() * 4.5) * devicePixelRatio;
+        parts.push({x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, c: i % 3 ? c : c2, r: (1.4 + Math.random() * 1.6) * devicePixelRatio});
+      }
+    }
+    for (var k = 0; k < 7; k++) rockets.push({at: k * 260 + Math.random() * 120, x: W * (0.15 + Math.random() * 0.7), y: H, ty: H * (0.15 + Math.random() * 0.35), launched: false});
+    soundWin(rockets.map(function (r) { return r.at; }));
+    function frame(now) {
+      var el = now - t0;
+      ctx.globalCompositeOperation = "destination-out"; ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "lighter";
+      rockets.forEach(function (r) {
+        if (el < r.at || r.done) return;
+        r.y -= (H * 0.022); ctx.fillStyle = "#fff3a8"; ctx.beginPath(); ctx.arc(r.x, r.y, 2.4 * devicePixelRatio, 0, 7); ctx.fill();
+        if (r.y <= r.ty) { r.done = true; burst(r.x, r.y); }
+      });
+      parts.forEach(function (p) {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.06 * devicePixelRatio; p.vx *= 0.985; p.vy *= 0.985; p.life -= 0.012;
+        if (p.life > 0) { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
+      });
+      ctx.globalAlpha = 1;
+      parts = parts.filter(function (p) { return p.life > 0; });
+      if (el < 4200 || parts.length) requestAnimationFrame(frame);
+      else { cv.remove(); removeEventListener("resize", size); fxBusy = false; }
+    }
+    requestAnimationFrame(frame);
+    var b = document.createElement("div"); b.className = "boom"; b.innerHTML = esc(text) + (sub ? "<small>" + esc(sub) + "</small>" : "");
+    document.body.appendChild(b); setTimeout(function () { b.remove(); }, 3300);
+  }
+  var CRY = ["😭", "😢", "🥲", "😿"];
+  var CRY_TEXT = ["Toang rồi các bác ơi…", "Thua keo này ta bày keo khác", "Cắt lỗ cũng là một nghệ thuật", "Khóc xíu rồi đào tiếp"];
+  function crying(sub) {
+    var d = document.createElement("div"), i = Math.random() * CRY_TEXT.length | 0;
+    d.className = "cry";
+    soundLose();
+    d.innerHTML = '<div><div class="face" style="text-align:center">' + CRY[i % CRY.length] + '</div><div class="msg">' + CRY_TEXT[i] + "</div>" + (sub ? '<div class="sub2">' + esc(sub) + "</div>" : "") + "</div>";
+    document.body.appendChild(d);
+    for (var k = 0; k < 18; k++) (function (k) {
+      var t = document.createElement("div"); t.className = "tear"; t.textContent = k % 3 ? "💧" : "😭";
+      t.style.left = (Math.random() * 100) + "vw"; t.style.animationDuration = (1.6 + Math.random() * 1.6) + "s"; t.style.animationDelay = (Math.random() * 1.2) + "s";
+      t.style.zIndex = 82; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4300);
+    })(k);
+    setTimeout(function () { d.classList.add("out"); setTimeout(function () { d.remove(); fxBusy = false; }, 520); }, 3200);
+  }
+
+  var DIG_TEXT = ["Khớp lệnh! Vác cuốc đi đào thôi…", "Lại phải cày cuốc rồi anh em ơi 😮‍💨", "Vào hầm rồi, đào ra vàng mới về", "Mồ hôi rơi, vàng sắp tới"];
+  function digging(sub) {
+    var d = document.createElement("div"), i = Math.random() * DIG_TEXT.length | 0;
+    d.className = "dig";
+    d.innerHTML = '<div><div class="scene"><div class="who">' + (i % 2 ? "🥵" : "😓") + '</div><div class="axe">⛏️</div><div class="rock">🪨</div></div><div class="msg">'
+      + DIG_TEXT[i] + "</div>" + (sub ? '<div class="sub2">' + esc(sub) + "</div>" : "") + "</div>";
+    document.body.appendChild(d);
+    soundDig();
+    var n = 0, iv = setInterval(function () { // sweat and gold chips fly off each hit
+      var sc = d.querySelector(".scene"); if (!sc) return;
+      var r = sc.getBoundingClientRect();
+      for (var k = 0; k < 3; k++) {
+        var e = document.createElement("div"); e.className = "sweat";
+        e.textContent = k === 0 ? "💦" : Math.random() < .5 ? "✨" : "🟡";
+        e.style.left = (r.left + r.width * (k === 0 ? 0.25 : 0.8)) + "px"; e.style.top = (r.top + r.height * (k === 0 ? 0.25 : 0.6)) + "px";
+        e.style.setProperty("--dx", (k === 0 ? -40 - Math.random() * 40 : (Math.random() * 120 - 30)) + "px");
+        e.style.setProperty("--dy", (-40 - Math.random() * 70) + "px");
+        if (k) e.style.fontSize = "16px";
+        document.body.appendChild(e); setTimeout(function (x) { return function () { x.remove(); }; }(e), 950);
+      }
+      if (++n >= 9) clearInterval(iv);
+    }, 320);
+    setTimeout(function () { d.classList.add("out"); setTimeout(function () { d.remove(); fxBusy = false; }, 520); }, 3100);
+  }
+  function soundDig() { // pickaxe "clink" on rock, in time with the swing, plus a tired sigh at the end
+    if (!canPlay()) return;
+    try {
+      var a = audio, now = a.currentTime;
+      for (var k = 0; k < 9; k++) {
+        var t = now + 0.3 + k * 0.32;
+        [1850, 2770, 4100].forEach(function (fq, j) {
+          var o = a.createOscillator(), g = a.createGain();
+          o.type = "triangle"; o.frequency.value = fq * (0.97 + Math.random() * 0.06);
+          g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09 / (j + 1), t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+          o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.2);
+        });
+        var nz = a.createBufferSource(), bp = a.createBiquadFilter(), ng = a.createGain();
+        nz.buffer = noiseBuf(a, 0.08); bp.type = "bandpass"; bp.frequency.value = 900;
+        ng.gain.setValueAtTime(0.25, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+        nz.connect(bp); bp.connect(ng); ng.connect(a.destination); nz.start(t); nz.stop(t + 0.08);
+      }
+      var s = a.createBufferSource(), lp = a.createBiquadFilter(), sg2 = a.createGain(), ts = now + 3.25; // "phù…"
+      s.buffer = noiseBuf(a, 0.7); lp.type = "lowpass"; lp.frequency.setValueAtTime(1200, ts); lp.frequency.linearRampToValueAtTime(300, ts + 0.6);
+      sg2.gain.setValueAtTime(0.0001, ts); sg2.gain.exponentialRampToValueAtTime(0.18, ts + 0.08); sg2.gain.exponentialRampToValueAtTime(0.0001, ts + 0.65);
+      s.connect(lp); lp.connect(sg2); sg2.connect(a.destination); s.start(ts); s.stop(ts + 0.7);
+    } catch (_) {}
+  }
+  var MISS_TEXT = ["Hụt mỏ rồi… giá không về 😮‍💨", "Chờ mỏi mòn, vàng chẳng chịu xuống", "Gãy cuốc, mai đào tiếp", "Lệnh chờ hết hạn, hên xui thôi"];
+  function missed(sub) {
+    var d = document.createElement("div"), i = Math.random() * MISS_TEXT.length | 0;
+    d.className = "miss";
+    d.innerHTML = '<div><div class="scene"><div class="who">' + (i % 2 ? "😮‍💨" : "😩") + '</div><div class="h1">⛏️</div><div class="h2">⛏️</div><div class="crack">💥</div><div class="rock">🪨</div></div><div class="msg">'
+      + MISS_TEXT[i] + "</div>" + (sub ? '<div class="sub2">' + esc(sub) + "</div>" : "") + "</div>";
+    document.body.appendChild(d);
+    soundMiss();
+    setTimeout(function () { d.classList.add("out"); setTimeout(function () { d.remove(); fxBusy = false; }, 520); }, 3300);
+  }
+  function soundMiss() { // one "clink" that snaps (the pickaxe breaks), then a sad "wah wah"
+    if (!canPlay()) return;
+    try {
+      var a = audio, now = a.currentTime, t = now + 0.55;
+      [1850, 2770].forEach(function (fq, j) {
+        var o = a.createOscillator(), g = a.createGain();
+        o.type = "triangle"; o.frequency.value = fq;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.1 / (j + 1), t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+        o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.17);
+      });
+      var nz = a.createBufferSource(), hp = a.createBiquadFilter(), ng = a.createGain();
+      nz.buffer = noiseBuf(a, 0.12); hp.type = "highpass"; hp.frequency.value = 2500;
+      ng.gain.setValueAtTime(0.35, t + 0.02); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      nz.connect(hp); hp.connect(ng); ng.connect(a.destination); nz.start(t + 0.02); nz.stop(t + 0.14);
+      [[392, 370, 1.25], [370, 349, 1.75], [349, 262, 2.25]].forEach(function (n, k) { // trombone "wah wah wahhh"
+        var o = a.createOscillator(), lp = a.createBiquadFilter(), g = a.createGain(), ts = now + n[2], len = k === 2 ? 0.9 : 0.42;
+        o.type = "sawtooth"; o.frequency.setValueAtTime(n[0], ts); o.frequency.linearRampToValueAtTime(n[1], ts + len);
+        lp.type = "lowpass"; lp.frequency.setValueAtTime(700, ts); lp.frequency.linearRampToValueAtTime(1300, ts + 0.12); lp.frequency.linearRampToValueAtTime(500, ts + len);
+        g.gain.setValueAtTime(0.0001, ts); g.gain.exponentialRampToValueAtTime(0.09, ts + 0.05); g.gain.setValueAtTime(0.09, ts + len - 0.1); g.gain.exponentialRampToValueAtTime(0.0001, ts + len);
+        o.connect(lp); lp.connect(g); g.connect(a.destination); o.start(ts); o.stop(ts + len + 0.02);
+      });
+    } catch (_) {}
+  }
+  function celebrate(e) {
+    if (fxBusy || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    fxBusy = true;
+    if (e.c === "win") fireworks(e.tt === "Chạm TP" ? "🎯 CHẠM TP!" : "💰 ĂN RỒI!", e.tx); else if (e.c === "run") digging(e.tx); else if (e.c === "miss") missed(e.tx); else crying(e.tx);
+  }
+  // Preview: add ?test=win or ?test=lose to the link.
+  function runTest() {
+    var tq = qs.get("test");
+    if (tq === "win") celebrate({c: "win", tt: "Chạm TP", tx: "BÁN VÀNG · +8.3% PnL · +111.45$"});
+    if (tq === "lose") celebrate({c: "loss", tt: "Chạm SL", tx: "MUA VÀNG · -25.0% PnL · -340.00$"});
+    if (tq === "miss") celebrate({c: "miss", tt: "Lệnh chờ hết hạn", tx: "MUA VÀNG chờ 4,079.14 · không khớp"});
+    if (tq === "fill") celebrate({c: "run", tt: "Đã khớp lệnh", tx: "MUA VÀNG giá 4,059.53 · TP 4,064.53 · SL 4,026.53"});
+  }
+  if (/^(win|lose|fill|miss)$/.test(qs.get("test") || "")) {
+    var hint = document.createElement("div"); hint.className = "boom"; hint.style.animation = "none"; hint.style.fontSize = "22px"; hint.style.pointerEvents = "auto"; hint.style.cursor = "pointer";
+    hint.textContent = "👆 Bấm vào đây để xem thử (có âm thanh)";
+    document.body.appendChild(hint);
+    hint.onclick = function (e) { e.stopPropagation(); soundOn = true; ac(); hint.remove(); setTimeout(function () { sndBtn(); runTest(); }, 120); };
+  }
+  // ---- Leo 04/11: notifications like Facebook (bell + red count + pop-ups), built from the trades themselves ----
+  var seenIds = null, lastSeen = 0, baseTitle = document.title, audio = null;
+  try { lastSeen = +localStorage.getItem("cw_seen") || 0; } catch (_) {}
+  if (!lastSeen) lastSeen = Date.now() - 24 * 3600e3;
+  function saveSeen() { try { localStorage.setItem("cw_seen", String(lastSeen)); } catch (_) {} }
+  function sg(v, d, u) { return (v >= 0 ? "+" : "") + num(v, d) + u; }
+  var CLOSE = {TP: ["🎯", "win", "Chạm TP"], LOI: ["💰", "win", "Đóng lời"], SL: ["🛑", "loss", "Chạm SL"], LO: ["📉", "loss", "Đóng lỗ"], HOA: ["➖", "", "Hòa vốn"], HUY: ["✖️", "", "Hủy lệnh chờ"], HH: ["⌛", "miss", "Lệnh chờ hết hạn"]};
+  function events() {
+    var out = [];
+    (state && state.trades || []).forEach(function (t) {
+      if (!t || !t.signalAt) return;
+      var k = t.metal + "|" + t.side + "|" + t.signalAt, who = (t.side === "MUA" ? "MUA " : "BÁN ") + (t.name || t.metal);
+      if (t.status === "CHO" || t.status === "HUY" || t.status === "HH" || (t.fillAt && t.fillAt - t.signalAt > 90000))
+        out.push({id: k + "|p", at: t.signalAt, ic: "📌", c: "wait", tt: "Lệnh chờ mới", tx: who + " tại " + num(t.entry) + " · TP " + num(t.tp) + " · SL " + num(t.sl)});
+      if (t.fillAt) out.push({id: k + "|f", at: t.fillAt, ic: "⚡", c: "run", tt: "Đã khớp lệnh", tx: who + " giá " + num(t.entry) + " · TP " + num(t.tp) + " · SL " + num(t.sl)});
+      var m = t.closedAt && CLOSE[t.status];
+      if (m && t.status === "HH") out.push({id: k + "|c", at: t.closedAt, ic: m[0], c: m[1], tt: m[2], tx: who + " chờ " + num(t.entry) + " · không khớp"});
+      else if (m) out.push({id: k + "|c", at: t.closedAt, ic: m[0], c: m[1], tt: m[2], tx: who + (t.exit != null ? " giá " + num(t.exit) : "")
+        + (t.pnlPct != null ? " · " + sg(t.pnlPct, 1, "% PnL") : "") + (t.netUsd != null ? " · " + sg(t.netUsd, 2, "$") : "")});
+    });
+    return out.sort(function (a, b) { return b.at - a.at; }).slice(0, 40);
+  }
+  function ago(ms) {
+    var s = Math.max(0, (Date.now() - ms) / 1000);
+    return s < 60 ? "vừa xong" : s < 3600 ? Math.floor(s / 60) + " phút trước" : s < 86400 ? Math.floor(s / 3600) + " giờ trước" : vn(ms);
+  }
+  function item(e, cl) {
+    return '<div class="' + cl + '"><div class="ic ' + e.c + '">' + e.ic + '</div><div><div class="nt">' + esc(e.tt) + '</div><div class="nx">' + esc(e.tx)
+      + '</div><div class="nw">' + ago(e.at) + "</div></div></div>";
+  }
+  function beep() {
+    try {
+      if (!canPlay()) return;
+      var o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime;
+      o.type = "sine"; o.frequency.setValueAtTime(880, t0); o.frequency.setValueAtTime(1320, t0 + 0.09);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+      o.connect(g); g.connect(audio.destination); o.start(t0); o.stop(t0 + 0.4);
+    } catch (_) {}
+  }
+  document.addEventListener("pointerdown", function () {
+    try { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === "suspended") audio.resume(); } catch (_) {}
+  }, {once: false, passive: true});
+  function toast(e) {
+    var box = document.getElementById("toasts"), d = document.createElement("div");
+    d.innerHTML = item(e, "toast"); d = d.firstChild;
+    d.onclick = function () { openPanel(); d.remove(); };
+    box.appendChild(d);
+    while (box.children.length > 3) box.removeChild(box.firstChild);
+    setTimeout(function () { d.classList.add("out"); setTimeout(function () { d.remove(); }, 320); }, 8000);
+  }
+  function notify() {
+    var ev = events(), ids = {};
+    ev.forEach(function (e) { ids[e.id] = 1; });
+    if (seenIds) {
+      var fresh = ev.filter(function (e) { return !seenIds[e.id] && Date.now() - e.at < 15 * 60e3; }).reverse();
+      fresh.slice(-3).forEach(toast);
+      var big = fresh.filter(function (e) { return e.id.slice(-2) === "|c" && (e.c === "win" || e.c === "loss"); }).pop()
+        || fresh.filter(function (e) { return e.id.slice(-2) === "|c" && e.c === "miss"; }).pop()
+        || fresh.filter(function (e) { return e.id.slice(-2) === "|f"; }).pop();
+      if (big) celebrate(big);
+      if (fresh.length) { beep(); var b = document.getElementById("bell"); b.classList.remove("ring"); void b.offsetWidth; b.classList.add("ring"); }
+    }
+    seenIds = ids;
+    var unread = ev.filter(function (e) { return e.at > lastSeen; }).length, n = document.getElementById("bellN");
+    n.hidden = !unread; n.textContent = unread > 9 ? "9+" : unread;
+    document.title = (unread ? "(" + unread + ") " : "") + baseTitle; window.CW_UNREAD = unread;
+    if (!document.getElementById("np").hidden) drawPanel(ev);
+  }
+  function drawPanel(ev) {
+    ev = ev || events();
+    document.getElementById("npList").innerHTML = ev.length ? ev.map(function (e) { return item(e, "ni" + (e.at > lastSeen ? " unread" : "")); }).join("")
+      : '<div class="nempty">Chưa có thông báo nào.</div>';
+  }
+  function markRead() { var ev = events(); lastSeen = Math.max(Date.now(), ev.length ? ev[0].at : 0); saveSeen(); notify(); }
+  function openPanel() {
+    var np = document.getElementById("np"); np.hidden = false; drawPanel();
+    setTimeout(markRead, 1500); // keep the blue dots a moment so the reader sees what is new
+  }
+  document.getElementById("bell").onclick = function (e) {
+    e.stopPropagation(); var np = document.getElementById("np");
+    if (np.hidden) openPanel(); else np.hidden = true;
+  };
+  document.getElementById("npAll").onclick = function (e) { e.stopPropagation(); markRead(); drawPanel(); };
+  document.getElementById("np").onclick = function (e) { e.stopPropagation(); };
+  document.addEventListener("click", function () { document.getElementById("np").hidden = true; });
+
+  // Firebase sends "put" / "patch" with {path, data}; the bot replaces the whole node, so path is usually "/".
+  function apply(path, data, patch) {
+    if (path === "/" || !path) { state = patch ? Object.assign(state || {}, data) : data; return; }
+    state = state || {};
+    var keys = path.replace(/^\/+/, "").split("/"), o = state;
+    for (var i = 0; i < keys.length - 1; i++) { if (typeof o[keys[i]] !== "object" || o[keys[i]] === null) o[keys[i]] = {}; o = o[keys[i]]; }
+    var last = keys[keys.length - 1];
+    if (patch && typeof data === "object" && data) o[last] = Object.assign(o[last] || {}, data); else o[last] = data;
+  }
+
+  function stamp() {
+    if (!state || !state.updated) return;
+    var age = (Date.now() - state.updated) / 1000;
+    if (age < 180) setLive(true, "Trực tiếp · " + new Date(state.updated).toLocaleTimeString("vi-VN", {timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit"}));
+    else setLive(false, "Bot chưa gửi dữ liệu mới · lần cuối " + vn(state.updated));
+  }
+
+  var poll = null;
+  function startPolling() {
+    if (poll) return;
+    var go = function () {
+      fetch(DB + "/" + NODE + ".json", {cache: "no-store"}).then(function (r) { return r.json(); })
+        .then(function (d) { state = d; render(); stamp(); }).catch(function () { setLive(false, "Mất kết nối, đang thử lại…"); });
+    };
+    go(); poll = setInterval(go, 15000);
+  }
+
+  function start() {
+    if (!/^https:\/\//.test(DB) || DB.indexOf("DIEN-LINK") >= 0) { setLive(false, "Chưa điền link Firebase trong trang"); return; }
+    if (!window.EventSource) { startPolling(); return; }
+    var es = new EventSource(DB + "/" + NODE + ".json"), fails = 0;
+    var onMsg = function (patch) { return function (e) { try { var m = JSON.parse(e.data); apply(m.path, m.data, patch); fails = 0; render(); stamp(); } catch (_) {} }; };
+    es.addEventListener("put", onMsg(false));
+    es.addEventListener("patch", onMsg(true));
+    es.addEventListener("cancel", function () { es.close(); setLive(false, "Firebase không cho đọc (kiểm tra Rules)"); });
+    es.onerror = function () { if (++fails >= 3) { es.close(); startPolling(); } else setLive(false, "Mất kết nối, đang thử lại…"); };
+  }
+
+  document.querySelectorAll(".tab").forEach(function (b) { b.onclick = function () {
+    document.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); tab = b.dataset.tab; render(); }; });
+  (function () {
+    var P = document.getElementById("hfPeriod"), F = document.getElementById("hfFrom"), T = document.getElementById("hfTo"),
+        S = document.getElementById("hfSide"), R = document.getElementById("hfRes"), N = document.getElementById("hfPer"), C = document.getElementById("hfCustom");
+    P.value = hf.period; F.value = hf.from; T.value = hf.to; S.value = hf.side; R.value = hf.res; N.value = String(hf.per);
+    C.classList.toggle("show", hf.period === "custom");
+    function apply() {
+      hf.period = P.value; hf.from = F.value; hf.to = T.value; hf.side = S.value; hf.res = R.value; hf.per = Number(N.value) || 5; hf.page = 1;
+      C.classList.toggle("show", hf.period === "custom"); saveHf(); render();
+    }
+    [P, F, T, S, R, N].forEach(function (el) { el.onchange = apply; });
+    document.getElementById("list").addEventListener("click", function (e) {
+      var b = e.target.closest && e.target.closest("[data-pg]");
+      if (!b || b.disabled) return;
+      hf.page += Number(b.dataset.pg); render();
+      document.getElementById("histbar").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  })();
+  document.querySelectorAll("#filters .chip").forEach(function (b) { b.onclick = function () {
+    document.querySelectorAll("#filters .chip").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); filter = b.dataset.f; render(); }; });
+  setInterval(stamp, 15000);
+  start();
+})();
+</script>
+<script>
+// Favicon: a pickaxe digging gold, two frames swapped (browsers do not animate SVG favicons themselves),
+// with a red count bubble like Facebook while there are unread notifications.
+(function () {
+  function frame(a, spark, n) {
+    return "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+      + '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#e09a08"/></linearGradient></defs>'
+      + '<path d="M1 31 L5 22 L10 19 L14 13 L19 18 L23 20 L27 31 Z" fill="url(#g)" stroke="#7a4f00" stroke-width="1.4" stroke-linejoin="round"/>'
+      + '<g transform="rotate(' + a + ' 28 26)"><line x1="28" y1="26" x2="19" y2="8" stroke="#a0622d" stroke-width="3" stroke-linecap="round"/>'
+      + '<path d="M12 7 Q19 1 26 7 Q19 5 12 7 Z" fill="#e6edf5" stroke="#5d6b7c" stroke-width="1.3" stroke-linejoin="round"/></g>'
+      + (spark ? '<circle cx="9" cy="13" r="2" fill="#fff3a8"/><circle cx="14" cy="9" r="1.6" fill="#ffd34d"/>' : '')
+      + (n ? '<circle cx="23" cy="9" r="9" fill="#ff3b4f" stroke="#fff" stroke-width="1.5"/><text x="23" y="13" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="'
+        + (n > 9 ? 10 : 13) + '" fill="#fff">' + (n > 9 ? "9+" : n) + '</text>' : '')
+      + '</svg>');
+  }
+  var i = 0, el = document.getElementById("fav"), still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function draw() { var n = window.CW_UNREAD || 0; el.href = i ? frame(-30, true, n) : frame(6, false, n); }
+  draw();
+  setInterval(function () { if (!still) i = 1 - i; draw(); }, 500);
+})();
+</script>
+</body>
+</html>

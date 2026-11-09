@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Quản lý bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script>
+  window.CW_DB_URL = "https://my-project-gold-bce37-default-rtdb.asia-southeast1.firebasedatabase.app";
+</script>
+<style>
+:root{--bg:#070b12;--panel:#0d1420;--panel2:#0a111c;--line:#1c2a3f;--text:#e6eef8;--muted:#7f93ad;--gold:#f5c451;--win:#12d18e;--loss:#ff5d73;--wait:#f0b44c;--run:#38bdf8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",system-ui,sans-serif;min-height:100vh;padding-bottom:90px}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:18px;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#out{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:6px 10px;font-size:12px;cursor:pointer}
+.status{margin:12px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.6}
+.status b{color:var(--text)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;background:var(--muted)}
+.dot.on{background:var(--win);box-shadow:0 0 8px var(--win)}.dot.off{background:var(--loss)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:14px 0;overflow:hidden}
+.card h2{font-size:13px;letter-spacing:.06em;color:var(--gold);padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.card h2 .n{margin-left:auto;color:var(--muted);font-weight:600;letter-spacing:0}
+.card.closed .rows{display:none}
+.row{display:flex;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid #111b2b}
+.row:first-child{border-top:0}
+.row.dirty{background:rgba(245,196,81,.07)}
+.row label{flex:1;font-size:13.5px;line-height:1.4;min-width:0}
+.row label small{display:block;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:11px;margin-top:2px}
+.row .in{flex:0 0 auto;display:flex;align-items:center;gap:6px}
+input[type=text],input[type=password],select{background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:8px 10px;font-size:14px;font-family:"JetBrains Mono",monospace;width:140px}
+select{width:260px;font-family:inherit}
+input[type=password]{width:190px}
+.sw{position:relative;width:46px;height:26px;flex:0 0 46px}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:#24324a;border-radius:20px;transition:.15s;cursor:pointer}
+.sw span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#cfd8e6;border-radius:50%;transition:.15s}
+.sw input:checked+span{background:var(--win)}
+.sw input:checked+span:before{transform:translateX(20px);background:#fff}
+.btn{background:var(--gold);color:#0b1220;border:0;border-radius:9px;padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.btn.red{background:var(--loss);color:#fff}
+.btn.green{background:var(--win);color:#062018}
+.btn:disabled{opacity:.5;cursor:default}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px}
+.big .btn{padding:14px;font-size:14px}
+.tag{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;margin-left:6px}
+.tag.ok{background:rgba(18,209,142,.15);color:var(--win)}.tag.no{background:rgba(255,93,115,.15);color:var(--loss)}
+#bar{position:fixed;left:0;right:0;bottom:0;background:rgba(13,20,32,.97);border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:10px;justify-content:center;align-items:center;transform:translateY(110%);transition:.2s}
+#bar.show{transform:none}
+#bar span{color:var(--muted);font-size:13px}
+#log{padding:10px 14px;font-size:13px;line-height:1.7;max-height:220px;overflow:auto}
+#log div{border-bottom:1px dashed #15223a}
+#log .t{color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:11px;margin-right:6px}
+.note{color:var(--muted);font-size:12.5px;padding:10px 14px;line-height:1.5}
+.warn{color:var(--wait)}
+#login{max-width:360px;margin:12vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+#login h2{font-size:17px;color:var(--gold);margin-bottom:14px}
+#login label{display:block;color:var(--muted);font-size:12px;margin:10px 0 4px}
+#login input{width:100%}
+#login button{width:100%;margin-top:16px}
+#login .err{color:var(--loss);font-size:13px;margin-top:10px;min-height:18px}
+@media (max-width:600px){
+  .row{flex-direction:column;align-items:stretch;gap:6px}
+  .row .in{justify-content:flex-start}
+  input[type=text],input[type=password],select{width:100%}
+  .row .in{width:100%}
+  .big{grid-template-columns:1fr}
+  .row.b{flex-direction:row;align-items:center}
+  .row.b .in{width:auto}
+}
+.acc{margin:10px 0}
+.acc .row{padding:14px}
+code{font-family:"JetBrains Mono",monospace;color:var(--gold)}
+/* Leo 09/11: admin layout, menu on the left, one section at a time */
+.shell{display:flex;min-height:100vh}
+#side{width:250px;flex:0 0 250px;background:var(--panel2);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;overflow:auto;padding:16px 12px;display:flex;flex-direction:column;gap:4px;z-index:30}
+.brand{font-weight:800;color:var(--gold);font-size:16px;padding:4px 10px 12px;line-height:1.3}
+.brand small{display:block;color:var(--muted);font-weight:600;font-size:11.5px;margin-top:2px}
+.accbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 10px}
+.accbox b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.accbox span{color:var(--muted);font-size:12px}
+.navb{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--muted);padding:10px 12px;border-radius:10px;font-family:inherit;font-weight:600;font-size:13.5px;cursor:pointer;text-align:left}
+.navb:hover{background:#111c2c;color:var(--text)}
+.navb.on{background:rgba(245,196,81,.12);color:var(--gold)}
+.navb .bd{margin-left:auto;background:var(--gold);color:#0b1220;border-radius:10px;font-size:11px;font-weight:800;padding:1px 7px}
+.navsep{height:1px;background:var(--line);margin:8px 6px}
+#side .grow{flex:1}
+#main{flex:1;min-width:0;padding:18px 26px}
+.pgw{max-width:1280px;margin:0 auto}
+.duo{display:grid;grid-template-columns:1fr;gap:0 14px;align-items:start}
+@media (min-width:1250px){.duo{grid-template-columns:1fr 1fr}.duo .card{margin:0 0 14px}}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.top h1{font-size:20px}
+.top .pill{margin-left:auto;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.sub{color:var(--muted);font-size:13px;margin-bottom:8px}
+#menu{display:none;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:6px 11px;font-size:18px;cursor:pointer}
+#scrim{display:none}
+.pg .card h2{cursor:default}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpi span{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+.kpi b{font-size:15px}
+@media (max-width:900px){
+  #side{position:fixed;left:0;top:0;transform:translateX(-105%);transition:transform .2s;box-shadow:0 0 30px rgba(0,0,0,.6)}
+  #side.open{transform:none}
+  #scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:25}
+  #menu{display:inline-block}
+  #main{padding:12px 14px}
+  .kpis{grid-template-columns:1fr 1fr}
+}
+#pwBox input{width:220px}
+.pstats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 14px 0}
+.pstats div{font-size:12px;color:var(--muted)}.pstats b{display:block;font-size:17px;color:var(--text);margin-top:3px}
+.pstats .up{color:var(--win)}.pstats .down{color:var(--loss)}
+.pch{padding:4px 14px 12px}
+.pch h3{font-size:12px;color:var(--muted);font-weight:600;margin:10px 0 4px}
+.pch svg{display:block;width:100%;overflow:visible}
+.pch svg text{fill:var(--muted);font-size:11px;font-family:inherit}
+#ptip{position:fixed;pointer-events:none;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.5;color:var(--text);display:none;z-index:40;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+@media (min-width:1250px){.pduo{display:grid;grid-template-columns:3fr 2fr;gap:16px}}
+@media (max-width:900px){.pstats{grid-template-columns:1fr 1fr}}
+</style>
+
+</head>
+<body>
+<form id="login" hidden>
+  <h2>🔒 Đăng nhập quản lý bot</h2>
+  <div id="keyRow"><label for="key">Web API Key (Firebase → Project settings, chỉ nhập lần đầu)</label><input id="key" type="text" autocomplete="off"></div>
+  <label for="em">Email</label><input id="em" type="text" inputmode="email" autocomplete="username" required>
+  <label for="pw">Mật khẩu</label><input id="pw" type="password" autocomplete="current-password" required>
+  <button class="btn" type="submit">Đăng nhập</button>
+  <div class="err" id="lerr"></div>
+</form>
+
+<div id="app" hidden>
+  <!-- list of accounts -->
+  <div id="vList" class="wrap">
+    <h1>👥 TÀI KHOẢN BOT <button id="out" type="button">Đăng xuất</button></h1>
+    <div class="status" id="pwBox"></div>
+    <div id="accList"><div class="note">Đang tải…</div></div>
+    <div class="big" style="padding:0;margin-top:12px"><button class="btn" id="bNew" type="button">＋ Tạo tài khoản</button></div>
+    <div class="card" id="newCard" hidden>
+      <h2>＋ TÀI KHOẢN MỚI</h2>
+      <div class="rows">
+        <div class="row"><label>Tên (ví dụ Leo, Anh Tuấn)</label><div class="in"><input type="text" id="nName"></div></div>
+        <div class="row"><label>Mã tài khoản<small>chữ thường, số, gạch ngang. Dán mã này vào bot trên VPS</small></label><div class="in"><input type="text" id="nId"></div></div>
+        <div class="row"><label>Cài đặt ban đầu</label><div class="in"><select id="nFrom"></select></div></div>
+      </div>
+      <div class="note" id="nNote"></div>
+      <div class="big"><button class="btn ghost" id="nCancel" type="button">Hủy</button><button class="btn" id="nOk" type="button">Tạo</button></div>
+    </div>
+  </div>
+
+  <!-- one account: admin layout -->
+  <div id="vAcc" class="shell" hidden>
+    <aside id="side">
+      <div class="brand">🐋 CyberWhale<small>Quản trị bot vàng</small></div>
+      <div class="accbox"><b id="aName"></b><span id="aSub"></span></div>
+      <nav id="nav"></nav>
+      <div class="grow"></div>
+      <div class="navsep"></div>
+      <button id="back" class="navb" type="button">👥 Danh sách tài khoản</button>
+      <button id="out2" class="navb" type="button">↩ Đăng xuất</button>
+    </aside>
+    <div id="scrim"></div>
+    <div id="main"><div class="pgw">
+      <div class="top"><button id="menu" type="button" aria-label="Menu">☰</button><h1 id="secTitle"></h1><span class="pill" id="pill"></span></div>
+      <div class="sub" id="secSub"></div>
+
+      <section class="pg" data-p="home">
+        <div class="status" id="st">Đang tải…</div>
+        <div class="kpis" id="kpis"></div>
+        <div class="card" id="pnl"><h2>📈 LÃI/LỖ LỆNH THẬT<span class="n" id="pnlN"></span></h2><div id="pnlBody"><div class="note">Đang tải…</div></div></div>
+        <div class="duo"><div class="card">
+          <h2>🚨 KHẨN CẤP</h2>
+          <div class="big">
+            <button class="btn" id="bPause" type="button" disabled>⏸ DỪNG VÀO LỆNH MỚI</button>
+            <button class="btn red" id="bLive" type="button" disabled>⛔ TẮT LỆNH THẬT</button>
+          </div>
+          <div class="note">Dừng vào lệnh mới: bot không mở lệnh mới, lệnh đang chạy vẫn giữ SL/TP trên sàn. Tắt lệnh thật: bot không đặt lệnh lên BingX nữa (chỉ chạy paper). Lệnh tay và nút trên Discord vẫn dùng bình thường.</div>
+        </div>
+        <div id="quick"></div></div>
+        <div class="card"><h2>📜 KẾT QUẢ LƯU GẦN ĐÂY</h2><div id="log"><div class="note" style="padding:0">Chưa có thay đổi nào.</div></div></div>
+      </section>
+
+      <div id="groups"></div>
+
+      <section class="pg" data-p="keys" hidden>
+        <div class="card">
+          <h2>🔑 KEY VÀ TOKEN (mã hóa)</h2>
+          <div class="rows" id="keys"></div>
+          <div class="note">Key được mã hóa ngay trên trình duyệt bằng mật khẩu mã hóa trước khi lưu vào database. Web không bao giờ hiện lại key. Bot giải mã bằng cùng mật khẩu (nhập trên VPS).</div>
+        </div>
+      </section>
+
+      <section class="pg" data-p="acc" hidden>
+        <div class="card">
+          <h2>🔌 KẾT NỐI BOT</h2>
+          <div class="note" id="howto"></div>
+        </div>
+        <div class="card">
+          <h2>🛠 QUẢN LÝ TÀI KHOẢN</h2>
+          <div class="big">
+            <button class="btn ghost" id="bRename" type="button">✎ Đổi tên</button>
+            <button class="btn ghost" id="bBackup" type="button">⬇ Tải file cài đặt (không có key)</button>
+          </div>
+          <div class="big" style="padding-top:0"><button class="btn red" id="bDelete" type="button">🗑 Xóa tài khoản</button></div>
+        </div>
+      </section>
+    </div></div>
+  </div>
+</div>
+
+<div id="bar"><span id="barText"></span><button class="btn ghost" id="bUndo" type="button">Hoàn tác</button><button class="btn" id="bSave" type="button">Lưu</button></div>
+<script>
+(function () {
+  "use strict";
+  var DB = (window.CW_DB_URL || "").replace(/\/+$/, "");
+  function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+  function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { return null; } }
+  // Same sign-in as chart.html (same site). The Web API Key is public by design; Firebase Rules guard the data.
+  var KEY = ls("cw_key") || "AIzaSyCAVLJWC65TP2eOvei6nxqirjwc_RXD9rY", REFRESH = ls("cw_rt") || "", UID = ls("cw_uid") || "", TOKEN = "", TOKEN_UNTIL = 0;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); }
+  function signedIn(j) {
+    TOKEN = j.idToken || j.id_token; TOKEN_UNTIL = Date.now() + (+(j.expiresIn || j.expires_in || 3600) - 120) * 1000;
+    REFRESH = j.refreshToken || j.refresh_token || REFRESH; ls("cw_rt", REFRESH);
+    UID = j.localId || j.user_id || UID; if (UID) ls("cw_uid", UID);
+  }
+  function token() {
+    if (TOKEN && Date.now() < TOKEN_UNTIL) return Promise.resolve(TOKEN);
+    if (!REFRESH || !KEY) return Promise.reject(new Error("login"));
+    return fetch("https://securetoken.googleapis.com/v1/token?key=" + encodeURIComponent(KEY), {method: "POST",
+      headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(REFRESH)})
+      .then(function (r) { return r.json(); }).then(function (j) { if (!j.id_token) throw new Error("login"); signedIn(j); return TOKEN; });
+  }
+  function api(method, path, body) {
+    return token().then(function (t) {
+      var o = {method: method, cache: "no-store"};
+      if (body !== undefined) { o.body = JSON.stringify(body); o.headers = {"Content-Type": "application/json"}; }
+      return fetch(DB + "/private/" + path + ".json?auth=" + encodeURIComponent(t), o);
+    }).then(function (r) {
+      if (r.status === 401 || r.status === 403) { var e = new Error("denied"); e.denied = true; throw e; }
+      return r.json();
+    });
+  }
+  function deniedText() { return "Firebase chặn. Chưa Publish Rules mới, hoặc UID trong Rules không phải tài khoản này. UID của mày: <b>" + esc(UID || "?") + "</b>"; }
+  function showLogin(msg) {
+    $("app").hidden = true; $("bar").classList.remove("show"); $("login").hidden = false;
+    $("keyRow").hidden = !!KEY; $("lerr").textContent = msg || "";
+  }
+  var started = false;
+  function showApp() { $("login").hidden = true; $("app").hidden = false; if (!started) { started = true; start(); } }
+  $("login").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var k = $("key").value.trim(); if (k) KEY = k;
+    var err = $("lerr"); err.textContent = "Đang đăng nhập…";
+    fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + encodeURIComponent(KEY), {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({email: $("em").value.trim(), password: $("pw").value, returnSecureToken: true})})
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.idToken) { var m = j.error && j.error.message || ""; err.textContent = /API_KEY|API key/i.test(m) ? "Web API Key sai." : /PASSWORD|EMAIL|CREDENTIAL|USER/i.test(m) ? "Sai email hoặc mật khẩu." : "Không đăng nhập được (" + m + ")."; if (/API_KEY|API key/i.test(m)) { KEY = ""; ls("cw_key", null); $("keyRow").hidden = false; } return; }
+        ls("cw_key", KEY); signedIn(j); $("pw").value = ""; showApp();
+      }).catch(function (x) { err.textContent = "Lỗi mạng: " + x.message; });
+  });
+  $("out").addEventListener("click", function () { REFRESH = ""; TOKEN = ""; ls("cw_rt", null); ss("cw_kp", null); location.reload(); });
+
+  // ---- key encryption (same format as the bot's KeyVault.cs) ----
+  var CHECK = "cyberwhale-ok", PASS = ss("cw_kp") || "", PASS_OK = false;
+  var b64 = function (u) { var s = ""; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); };
+  var unb64 = function (s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  function aesKey(pass, salt, use) {
+    return crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]).then(function (base) {
+      return crypto.subtle.deriveKey({name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256"}, base, {name: "AES-GCM", length: 256}, false, [use]);
+    });
+  }
+  function seal(plain, pass) {
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    return aesKey(pass, salt, "encrypt").then(function (k) { return crypto.subtle.encrypt({name: "AES-GCM", iv: iv}, k, new TextEncoder().encode(plain)); })
+      .then(function (ct) { ct = new Uint8Array(ct); var all = new Uint8Array(28 + ct.length); all.set(salt); all.set(iv, 16); all.set(ct, 28); return "v1:" + b64(all); });
+  }
+  function unseal(s, pass) {
+    var all = unb64(s.slice(3));
+    return aesKey(pass, all.slice(0, 16), "decrypt").then(function (k) { return crypto.subtle.decrypt({name: "AES-GCM", iv: all.slice(16, 28)}, k, all.slice(28)); })
+      .then(function (p) { return new TextDecoder().decode(p); });
+  }
+  function drawPass(msg) {
+    $("pwBox").innerHTML = PASS_OK
+      ? "🔐 Mật khẩu mã hóa key: <b>đã nhập</b> (chỉ nhớ trong tab này). <button class='btn ghost' id='pwForget' type='button' style='padding:4px 9px'>Quên</button>"
+      : "🔐 <b>Mật khẩu mã hóa key</b> (cần để lưu key BingX/Telegram; bot trên VPS nhập đúng mật khẩu này):<div class='in' style='margin-top:6px;display:flex;gap:6px'><input type='password' id='pwIn' autocomplete='off' placeholder='mật khẩu mã hóa'><button class='btn' id='pwOk' type='button'>OK</button></div>" + (msg ? "<div class='warn' style='margin-top:6px'>" + msg + "</div>" : "");
+    if (PASS_OK) $("pwForget").onclick = function () { PASS = ""; PASS_OK = false; ss("cw_kp", null); drawPass(); };
+    else $("pwOk").onclick = function () { setPass($("pwIn").value); };
+  }
+  // The first password typed becomes THE password (private/keycheck); later it must match.
+  function setPass(p) {
+    if (!p) return;
+    api("GET", "keycheck").then(function (chk) {
+      if (!chk) {
+        if (!confirm("Chưa có mật khẩu mã hóa. Dùng mật khẩu này cho mọi tài khoản? Nhớ kỹ: quên là phải nhập lại toàn bộ key.")) return;
+        return seal(CHECK, p).then(function (s) { return api("PUT", "keycheck", s); }).then(function () { PASS = p; PASS_OK = true; ss("cw_kp", p); drawPass(); });
+      }
+      return unseal(chk, p).then(function (t) {
+        if (t !== CHECK) throw new Error("x");
+        PASS = p; PASS_OK = true; ss("cw_kp", p); drawPass();
+      }).catch(function () { drawPass("Sai mật khẩu mã hóa."); });
+    }).catch(function (e) { drawPass(e.denied ? deniedText() : "Lỗi mạng."); });
+  }
+
+  // ---- metadata: from the bot (private/meta), else the copy built into this page ----
+  // Leo 09/11: the settings list is not in this public file any more; it is read from the database after login.
+  var META = {items: [], secrets: []}, GROUPS = [
+    ["⚡ BẬT / TẮT NHANH", /^(tamdung|live_bat|san|ai_nhanxet)$/],
+    ["🎯 CHIẾN LƯỢC VÀ CẶP", /^(chien_luoc|vang|bac|dau|khung_|han_lenh_cho|vao_ngay|quanly_chienluoc)/],
+    ["📰 GIỜ GIAO DỊCH VÀ TIN", /^(gio_|nghi_|tranh_tin|tin_|lich_tin)/],
+    ["💰 LỆNH THẬT BINGX", /^(live_|kieu_vi_?the|lenh_cung_chieu|thay_lenh_cho|huy_cho_khi_toi_tp)/],
+    ["📐 TP / SL / ĐÒN BẨY", /^(donbay_|tp_|sl_|hoavon|khoa_lai|lo_ngay)/],
+    ["➕ DCA", /^dca/],
+    ["🔔 THÔNG BÁO", /./]
+  ];
+  var PAGES = [["home", "📊", "Tổng quan", "Trạng thái bot, nút khẩn cấp, bật/tắt nhanh và kết quả lưu gần đây."]];
+  [["🎯", "Chiến lược & cặp"], ["📰", "Giờ giao dịch & tin"], ["💰", "Lệnh thật BingX"], ["📐", "TP / SL / đòn bẩy"], ["➕", "DCA"], ["🔔", "Thông báo & khác"]]
+    .forEach(function (x, i) { PAGES.push(["g" + (i + 1), x[0], x[1], ""]); });
+  PAGES.push(["keys", "🔑", "Key & bảo mật", "Key BingX, Telegram, Discord, AI, mã hóa bằng mật khẩu mã hóa của mày."]);
+  PAGES.push(["acc", "🛠", "Tài khoản", "Cách nối bot trên VPS, đổi tên, tải file cài đặt, xóa tài khoản."]);
+  var page = ls("cw_admin_page") || "home";
+  function buildNav() {
+    var nav = $("nav"); nav.innerHTML = "";
+    PAGES.forEach(function (p) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "navb"; b.setAttribute("data-nav", p[0]);
+      b.innerHTML = "<span>" + p[1] + "</span><span>" + esc(p[2]) + "</span><span class='bd' hidden></span>";
+      b.addEventListener("click", function () { show(p[0]); });
+      nav.appendChild(b);
+    });
+  }
+  function show(p) {
+    var known = PAGES.some(function (x) { return x[0] === p; }) && document.querySelector("[data-p='" + p + "']");
+    if (!known) p = "home";
+    page = p; ls("cw_admin_page", p);
+    document.querySelectorAll("#vAcc [data-p]").forEach(function (el) { el.hidden = el.getAttribute("data-p") !== p; });
+    document.querySelectorAll("#nav .navb").forEach(function (el) { el.classList.toggle("on", el.getAttribute("data-nav") === p); });
+    if (p === "home" && typeof pnlList !== "undefined" && pnlList && pnlList.length && $("pLine")) setTimeout(drawPnl, 0);
+    var info = PAGES.filter(function (x) { return x[0] === p; })[0];
+    $("secTitle").textContent = info[1] + " " + info[2];
+    $("secSub").textContent = info[3] || (rowsIn(p) + " mục cài đặt. Sửa xong bấm Lưu ở thanh dưới, bot nhận trong khoảng 5 giây.");
+    menu(false); window.scrollTo(0, 0);
+  }
+  function rowsIn(p) { return Object.keys(rows).filter(function (k) { return rows[k].page === p; }).length; }
+  function badges() {
+    var n = {};
+    Object.keys(dirty).forEach(function (k) { var pg = rows[k] && rows[k].page; if (pg) n[pg] = (n[pg] || 0) + 1; });
+    document.querySelectorAll("#nav .navb").forEach(function (el) {
+      var c = n[el.getAttribute("data-nav")] || 0, bd = el.querySelector(".bd"); bd.hidden = !c; bd.textContent = c;
+    });
+  }
+  function menu(open) { $("side").classList.toggle("open", open); $("scrim").classList.toggle("show", open); }
+  $("menu").addEventListener("click", function () { menu(true); });
+  $("scrim").addEventListener("click", function () { menu(false); });
+  $("out2").addEventListener("click", function () { $("out").click(); });
+  // Leo 09/11: the bot reads only accounts/<id>/rev every 5 s and the whole account when it changes.
+  function bump(id) { return api("PUT", "accounts/" + id + "/rev", Date.now()); }
+  function metaItem(k) { for (var i = 0; i < META.items.length; i++) if (META.items[i].k === k) return META.items[i]; return null; }
+  function defaults() { var v = {}; META.items.forEach(function (it) { v[it.k] = it.d; }); return v; }
+
+  // ---- list ----
+  var accounts = {};
+  function ago(ms) { var s = Math.max(0, Math.round((Date.now() - ms) / 1000)); return s < 60 ? s + " giây" : s < 3600 ? Math.round(s / 60) + " phút" : s < 86400 ? Math.round(s / 3600) + " giờ" : Math.round(s / 86400) + " ngày"; }
+  function online(a) { return a && a.status && a.status.at && Date.now() - a.status.at < 90e3; }
+  function modeText(v) { v = v || {}; return (v.live_bat === "bat" ? (v.san === "that" ? "💰 THẬT" : "🧪 DEMO") : "📝 chỉ paper") + (v.tamdung === "bat" ? " · ⏸ đang dừng vào lệnh" : ""); }
+  function loadList() {
+    return api("GET", "accounts").then(function (all) {
+      accounts = all || {};
+      var ids = Object.keys(accounts).sort(function (x, y) { return (accounts[x].createdAt || 0) - (accounts[y].createdAt || 0); });
+      var box = $("accList");
+      if (!ids.length) { box.innerHTML = "<div class='note'>Chưa có tài khoản nào. Bấm <b>Tạo tài khoản</b>: chọn \"Lấy từ bot đang chạy\" để đưa cài đặt bot hiện tại của mày lên.</div>"; return; }
+      box.innerHTML = "";
+      ids.forEach(function (id) {
+        var a = accounts[id], on = online(a), blank = !a.values;
+        var card = document.createElement("div"); card.className = "card acc";
+        card.innerHTML = "<div class='row' style='cursor:pointer'><label><b style='font-size:15px'>" + esc(a.name || id) + "</b><small>mã: " + esc(id) + "</small>" +
+          "<span style='display:block;margin-top:4px;color:var(--muted);font-size:12.5px'><span class='dot " + (on ? "on" : "off") + "'></span>" +
+          (on ? "bot đang chạy" : a.status && a.status.at ? "bot không phản hồi (" + ago(a.status.at) + ")" : "chưa có bot nào kết nối") +
+          (blank ? " · <span class='warn'>chờ bot đầu tiên đẩy cài đặt lên</span>" : " · " + modeText(a.values)) + "</span></label><div class='in'><button class='btn' type='button'>Mở ›</button></div></div>";
+        card.querySelector(".row").addEventListener("click", function () { openAcc(id); });
+        box.appendChild(card);
+      });
+    });
+  }
+  $("bNew").addEventListener("click", function () {
+    var sel = $("nFrom"); sel.innerHTML = "";
+    [["blank", "Lấy từ bot đang chạy (bot nào nhập mã này đầu tiên sẽ đẩy cài đặt của nó lên)"], ["default", "Cài đặt mặc định"]].concat(
+      Object.keys(accounts).filter(function (id) { return accounts[id].values; }).map(function (id) { return ["copy:" + id, "Copy từ " + (accounts[id].name || id) + " (không copy key)"]; }))
+      .forEach(function (o) { var e = document.createElement("option"); e.value = o[0]; e.textContent = o[1]; sel.appendChild(e); });
+    $("nName").value = ""; $("nId").value = ""; $("nNote").textContent = ""; $("newCard").hidden = false; $("nName").focus();
+  });
+  $("nName").addEventListener("input", function () {
+    $("nId").value = $("nName").value.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "d").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32);
+  });
+  $("nCancel").addEventListener("click", function () { $("newCard").hidden = true; });
+  $("nOk").addEventListener("click", function () {
+    var name = $("nName").value.trim(), id = $("nId").value.trim(), from = $("nFrom").value;
+    if (!name || !/^[a-z0-9_-]{2,32}$/.test(id)) { $("nNote").textContent = "Cần tên, và mã 2-32 ký tự (chữ thường, số, - _)."; return; }
+    if (accounts[id]) { $("nNote").textContent = "Mã này đã có."; return; }
+    var rec = {name: name, createdAt: Date.now()};
+    if (from === "default") { if (!META.items.length) { alert("Chưa tải được danh sách cài đặt (bot chưa kết nối lần nào). Chọn lấy từ bot đang chạy."); return; } rec.values = defaults(); }
+    else if (from.indexOf("copy:") === 0) { var src = accounts[from.slice(5)]; rec.values = src.values; if (src.base) rec.base = src.base; }
+    $("nNote").textContent = "Đang tạo…";
+    api("PUT", "accounts/" + id, rec).then(function () { $("newCard").hidden = true; return loadList(); }).then(function () { openAcc(id); })
+      .catch(function (e) { $("nNote").innerHTML = e.denied ? deniedText() : "Lỗi mạng: " + esc(e.message); });
+  });
+
+  // ---- one account ----
+  var cur = "", acc = null, items = {}, rows = {}, dirty = {}, sig = "";
+  function openAcc(id) {
+    cur = id; acc = accounts[id]; rows = {}; dirty = {}; sig = ""; bar();
+    $("vList").hidden = true; $("vAcc").hidden = false; $("groups").innerHTML = ""; $("quick").innerHTML = ""; $("keys").innerHTML = "";
+    $("aName").textContent = (acc && acc.name) || id; $("aSub").textContent = "mã: " + id;
+    buildNav(); show(page);
+    $("log").innerHTML = "<div class='note' style='padding:0'>Chưa có thay đổi nào.</div>";
+    window.scrollTo(0, 0);
+    $("howto").innerHTML = "Trên VPS: app bot › Cài đặt › mục Firebase › <b>Mã tài khoản</b> = <code>" + esc(id) + "</code>, <b>Mật khẩu mã hóa key</b> = mật khẩu mã hóa của mày › LƯU. " +
+      "Bot lấy toàn bộ cài đặt + key của tài khoản này về chạy. Discord (/lenh, /huylenh, /dca, nút chốt) vẫn dùng như cũ.";
+    loadAcc();
+  }
+  $("back").addEventListener("click", function () {
+    if (Object.keys(dirty).length && !confirm("Bỏ các thay đổi chưa lưu?")) return;
+    cur = ""; dirty = {}; bar(); menu(false); pnlKey = ""; pnlHash = ""; pnlList = null; pnlMirror = null; pnlPaper = null; metaDone = false; $("pnlN").textContent = ""; $("pnlBody").innerHTML = "<div class='note'>Đang tải…</div>"; $("vAcc").hidden = true; $("vList").hidden = false; loadList().catch(fail);
+  });
+  // Leo 09/11 (Firebase downloads): the whole account (~15 KB) and meta (~8 KB) are read when an account opens, after a
+  // save, and every 2 minutes; the 10-second tick reads only the status. Nothing is read while the tab is hidden.
+  var metaDone = false, fullUtc = 0;
+  function tickAcc() {
+    if (!cur) return Promise.resolve();
+    if (Date.now() - fullUtc > 120e3) return loadAcc();
+    var id = cur;
+    return api("GET", "accounts/" + id + "/status").then(function (st) {
+      if (id !== cur || !acc) return;
+      acc.status = st; drawStatus(); loadPnl();
+    });
+  }
+  function loadAcc() {
+    if (!cur) return Promise.resolve();
+    fullUtc = Date.now();
+    return Promise.all([api("GET", "accounts/" + cur), metaDone ? null : api("GET", "meta").catch(function () { return null; })]).then(function (x) {
+      if (!x[0]) { alert("Tài khoản này không còn."); $("back").click(); return; }
+      acc = x[0]; if (x[1] && x[1].items) { META = x[1]; metaDone = true; }
+      $("aName").textContent = acc.name || cur;
+      drawStatus(); loadPnl();
+      if (!acc.values) {
+        $("groups").innerHTML = ""; $("quick").innerHTML = "<div class='card'><div class='note'>Tài khoản trống: nhập mã <b>" + esc(cur) + "</b> vào bot trên VPS (kèm mật khẩu mã hóa). Bot sẽ đẩy toàn bộ cài đặt và key hiện tại của nó lên đây, rồi sửa trên web được.</div></div>";
+        renderKeys(); emergency(); show("home"); return;
+      }
+      META.items.forEach(function (m) {
+        var v = acc.values[m.k] != null ? String(acc.values[m.k]) : m.d;
+        items[m.k] = {k: m.k, l: m.l, t: m.t, min: m.min, max: m.max, ch: m.ch, v: m.t === "bool" ? v === "bat" : v};
+      });
+      var s2 = JSON.stringify(acc.values) + JSON.stringify(Object.keys(acc.keys || {}));
+      if (!Object.keys(rows).length) render(); else if (s2 !== sig) Object.keys(rows).forEach(function (k) { if (!(k in dirty)) setInput(k); });
+      sig = s2; renderKeys(); emergency();
+    });
+  }
+  function drawStatus() {
+    var st = acc && acc.status, el = $("st");
+    var on0 = st && st.at && Date.now() - st.at < 90e3;
+    $("pill").innerHTML = "<span class='dot " + (on0 ? "on" : "off") + "'></span>" + (on0 ? "bot đang chạy" : st && st.at ? "bot không phản hồi" : "chưa có bot");
+    $("kpis").innerHTML = !st || !st.at ? "" : [
+      ["Bot", on0 ? "🟢 Đang chạy" : "🔴 Không phản hồi"],
+      ["Chiến lược", esc(st.strategy || "?")],
+      ["Vào lệnh mới", st.paused ? "⏸ Đang dừng" : "▶ Bật"],
+      ["Lệnh thật", st.live ? (st.testnet ? "🧪 Demo (VST)" : "💰 THẬT") : "📝 Tắt (paper)"]
+    ].map(function (k) { return "<div class='kpi'><span>" + k[0] + "</span><b>" + k[1] + "</b></div>"; }).join("");
+    if (!st || !st.at) { el.innerHTML = "<span class='dot off'></span><b>Chưa có bot nào kết nối tài khoản này.</b>"; return; }
+    var on = Date.now() - st.at < 90e3;
+    el.innerHTML = "<span class='dot " + (on ? "on" : "off") + "'></span><b>" + (on ? "Bot đang chạy" : "Bot không phản hồi") + "</b> · cập nhật " + ago(st.at) + " trước" +
+      "<br>Sao lưu dữ liệu lệnh: <b>" + (st.backupAt ? new Date(st.backupAt).toLocaleString("vi-VN", {hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit"}) + " (" + ago(st.backupAt) + " trước)" : "chưa có") + "</b>" + (st.note ? "<br><span class='warn'>⚠ " + esc(st.note) + "</span>" : "");
+  }
+  // Leo 09/11: overview chart. Real closed BingX trades from 04/11 (the account's backed-up live-mirror.json, the
+  // exchange result = RealNetUsd), cumulative line + profit per day (VN time). Fetched again only when the backup changes.
+  var pnlKey = "", pnlHash = "", pnlList = null, pnlDemo = false, REAL_FROM = Date.UTC(2026, 10, 3, 17);
+  function unpackB64(b64) {
+    var bin = atob(b64), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  }
+  function utcMs(x) { if (!x) return 0; x = String(x); if (!/(Z|[+-]\d\d:\d\d)$/i.test(x)) x += "Z"; return Date.parse(x) || 0; }
+  function money(v) { return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + "$"; }
+  function vnDay(ms) { var d = new Date(ms + 7 * 3600e3); return d.getUTCFullYear() + "-" + ("0" + (d.getUTCMonth() + 1)).slice(-2) + "-" + ("0" + d.getUTCDate()).slice(-2); }
+  function vnTime(ms) { var d = new Date(ms + 7 * 3600e3); return ("0" + d.getUTCDate()).slice(-2) + "/" + ("0" + (d.getUTCMonth() + 1)).slice(-2) + " " + ("0" + d.getUTCHours()).slice(-2) + ":" + ("0" + d.getUTCMinutes()).slice(-2); }
+  function pair(sym) { sym = String(sym || "").toUpperCase(); return /GOLD|XAU/.test(sym) ? "Vàng" : /SILVER|XAG/.test(sym) ? "Bạc" : /OIL|WTI|BRENT/.test(sym) ? "Dầu" : sym; }
+  // Same numbers as the public page (SignalSite.Build): each bot trade with a real BingX record (not demo) alerted from
+  // 04/11, profit = the trade's exchange result (RealNetUsd) or, while the exchange has not answered, the estimate
+  // from entry/exit; only wins and losses count. The trade file is read again only when the BingX record file changed
+  // (a close always changes it) or every 15 minutes.
+  var pnlMirror = null, pnlPaper = null, pnlPaperUtc = 0;
+  function getPacked(id, key) {
+    return api("GET", "backup/" + id + "/files/" + key).then(function (p) {
+      return typeof p === "string" && p ? unpackB64(p).then(function (t) { return JSON.parse(t); }) : null;
+    });
+  }
+  function loadPnl() {
+    var st = acc && acc.status, k = cur + "|" + (st && st.backupAt || 0), id = cur;
+    if (!cur || k === pnlKey) return; pnlKey = k;
+    api("GET", "backup/" + cur + "/info/live-mirror_json/h").then(function (h) {
+      if (id !== cur) return;
+      var same = h && h === pnlHash && pnlMirror;
+      if (same && Date.now() - pnlPaperUtc < 900e3) return;
+      pnlHash = h || "";
+      return Promise.all([same ? pnlMirror : getPacked(id, "live-mirror_json"), getPacked(id, "paper-trades-mtf_json")]).then(function (x) {
+        if (id !== cur) return;
+        pnlMirror = x[0]; pnlPaper = x[1]; pnlPaperUtc = Date.now();
+        if (!pnlMirror || !pnlPaper) { pnlList = null; drawPnl(); return; }
+        setPnl(pnlMirror, pnlPaper); drawPnl();
+      });
+    }).catch(function (e) {
+      if (id === cur) $("pnlBody").innerHTML = "<div class='note'>Không tải được dữ liệu lệnh" + (e && e.denied ? " (Firebase chặn)" : "") + ".</div>";
+    });
+  }
+  function setPnl(recs, trades) {
+    var last = {};
+    (Array.isArray(recs) ? recs : []).forEach(function (r) { if (r && r.TradeId) last[r.TradeId] = r; });
+    var out = [];
+    (Array.isArray(trades) ? trades : []).forEach(function (t) {
+      var r = t && last[t.Id];
+      if (!r || r.Testnet || !(r.EntryPrice > 0 && (r.Status === "OPEN" || r.Status === "CLOSED"))) return;
+      if (utcMs(t.AlertUtc) < REAL_FROM) return;
+      if (["TP", "SL", "CLOSED", "MANUAL", "AMBIGUOUS"].indexOf(t.Status) < 0) return;
+      var entry = r.EntryPrice > 0 ? r.EntryPrice : t.RealEntryPrice > 0 ? t.RealEntryPrice : t.Entry;
+      var exit = t.RealExitPrice > 0 ? t.RealExitPrice : r.ExitPrice > 0 ? r.ExitPrice : t.ExitObservedPrice > 0 ? t.ExitObservedPrice : t.Status === "TP" ? t.Tp : t.Status === "SL" ? t.Sl : 0;
+      // no booked result yet: the trade's, then the BingX record's, then an estimate from the REAL size on BingX
+      var booked = t.RealNetUsd != null ? +t.RealNetUsd : r.RealNetUsd != null ? +r.RealNetUsd : null, est = booked == null, net = booked;
+      if (est && exit > 0 && entry > 0) {
+        var sgn = t.Side === "LONG" ? 1 : -1, fee = (+t.FeePercentPerSide || 0) / 100;
+        net = r.Quantity > 0 && r.EntryPrice > 0 ? sgn * (exit - r.EntryPrice) * r.Quantity - (r.EntryPrice + exit) * r.Quantity * fee
+          : sgn * (exit - entry) * t.MarginUsd * t.Leverage / entry;
+      }
+      if (net == null || !isFinite(net)) return;
+      var win = t.Status === "TP" || net > 0, loss = !win && (t.Status === "SL" || net < 0);
+      if (!win && !loss) return; // break-even: not a win or a loss on the page either
+      out.push({t: utcMs(t.ClosedUtc) || utcMs(r.ClosedUtc) || utcMs(t.AlertUtc), v: net, p: pair(t.Symbol), side: t.Side === "SHORT" ? "SHORT" : "LONG", est: est || !!t.RealIsEstimate, win: win});
+    });
+    pnlDemo = false;
+    pnlList = out.sort(function (a, b) { return a.t - b.t; });
+  }
+  function tip(e, html) {
+    var t = $("ptip"); if (!t) { t = document.createElement("div"); t.id = "ptip"; document.body.appendChild(t); }
+    if (!html) { t.style.display = "none"; return; }
+    t.innerHTML = html; t.style.display = "block";
+    var x = e.clientX + 14, y = e.clientY + 14, w = t.offsetWidth, h = t.offsetHeight;
+    if (x + w > innerWidth - 8) x = e.clientX - w - 14; if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+    t.style.left = Math.max(8, x) + "px"; t.style.top = Math.max(8, y) + "px";
+  }
+  function niceTicks(lo, hi) {
+    var span = hi - lo || 1, step = Math.pow(10, Math.floor(Math.log10(span / 4))), m = span / 4 / step;
+    step *= m > 5 ? 10 : m > 2 ? 5 : m > 1 ? 2 : 1;
+    var out = []; for (var v = Math.floor(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(+v.toFixed(10)); return out;
+  }
+  function drawPnl() {
+    var body = $("pnlBody"); if (!body) return;
+    var L = pnlList;
+    if (!L) { $("pnlN").textContent = ""; body.innerHTML = "<div class='note'>Chưa có bản sao lưu dữ liệu lệnh của tài khoản này (bot v1.9.76 trở lên mới gửi).</div>"; return; }
+    $("pnlN").textContent = (pnlDemo ? "demo (VST) · " : "từ 04/11 · ") + L.length + " lệnh";
+    if (!L.length) { body.innerHTML = "<div class='note'>Chưa có lệnh thật nào đóng từ 04/11.</div>"; return; }
+    var total = 0, win = 0, estN = 0, today = vnDay(Date.now()), todayV = 0, days = {}, pts = [{t: 0, c: 0}];
+    L.forEach(function (x, i) {
+      total += x.v; if (x.win) win++; if (x.est) estN++;
+      var d = vnDay(x.t); days[d] = (days[d] || 0) + x.v; if (d === today) todayV += x.v;
+      pts.push({t: x.t, c: total, x: x, n: i + 1});
+    });
+    var stat = function (l, v, cls) { return "<div>" + l + "<b" + (cls ? " class='" + cls + "'" : "") + ">" + v + "</b></div>"; };
+    var cls = function (v) { return v > 0 ? "up" : v < 0 ? "down" : ""; };
+    body.innerHTML = "<div class='pstats'>" + stat("Lãi ròng", money(total), cls(total)) + stat("Hôm nay", money(todayV), cls(todayV)) +
+      stat("Số lệnh", L.length + " · " + win + " thắng / " + (L.length - win) + " thua") + stat("Tỷ lệ thắng", Math.round(win * 100 / L.length) + "%") + "</div>" +
+      (estN ? "<div class='note' style='padding:6px 14px 0'>⚠ " + estN + " lệnh chưa có kết quả từ sàn, đang tính ước theo giá vào/ra.</div>" : "") +
+      "<div class='pduo'><div class='pch'><h3>Lãi/lỗ cộng dồn theo từng lệnh</h3><svg id='pLine'></svg></div><div class='pch'><h3>Lãi/lỗ theo ngày (giờ VN)</h3><svg id='pBars'></svg></div></div>";
+    // day list: every day from the first trade to today, empty days = 0
+    var dl = [], d0 = Date.parse(vnDay(L[0].t) + "T00:00:00Z"), d1 = Date.parse(today + "T00:00:00Z");
+    for (var t = d0; t <= d1 && dl.length < 120; t += 864e5) { var k = new Date(t).toISOString().slice(0, 10); dl.push({d: k, v: days[k] || 0}); }
+    if (dl.length >= 120) dl = Object.keys(days).sort().map(function (k) { return {d: k, v: days[k]}; });
+    lineChart($("pLine"), pts); barChart($("pBars"), dl);
+  }
+  function axisY(lo, hi, H, top, bottom) {
+    var ticks = niceTicks(Math.min(lo, 0), Math.max(hi, 0));
+    lo = ticks[0]; hi = ticks[ticks.length - 1];
+    return {ticks: ticks, y: function (v) { return top + (hi - v) / ((hi - lo) || 1) * (H - top - bottom); }};
+  }
+  function lineChart(svg, pts) {
+    var W = svg.clientWidth || svg.parentNode.clientWidth || 600, H = 220, padL = 58, padR = 12, top = 10, bottom = 24;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("height", H);
+    var vals = pts.map(function (p) { return p.c; }), A = axisY(Math.min.apply(null, vals), Math.max.apply(null, vals), H, top, bottom);
+    var n = pts.length - 1, X = function (i) { return padL + (n ? i / n : 0.5) * (W - padL - padR); };
+    var h = "";
+    A.ticks.forEach(function (v) { var y = A.y(v); h += "<line x1='" + padL + "' x2='" + (W - padR) + "' y1='" + y + "' y2='" + y + "' stroke='" + (v === 0 ? "#3a4d68" : "#16243a") + "' stroke-width='1'/><text x='" + (padL - 8) + "' y='" + (y + 4) + "' text-anchor='end'>" + (v > 0 ? "+" : "") + v.toLocaleString("en-US") + "$</text>"; });
+    var d = pts.map(function (p, i) { return (i ? "L" : "M") + X(i).toFixed(1) + " " + A.y(p.c).toFixed(1); }).join(" ");
+    var last = pts[n].c, col = last >= 0 ? "#12d18e" : "#ff5d73", y0 = A.y(0);
+    h += "<path d='" + d + " L" + X(n).toFixed(1) + " " + y0 + " L" + X(0) + " " + y0 + " Z' fill='" + col + "' opacity='.10'/>";
+    h += "<path d='" + d + "' fill='none' stroke='" + col + "' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/>";
+    if (n > 0) { h += "<text x='" + X(1) + "' y='" + (H - 6) + "'>" + vnTime(pts[1].t).slice(0, 5) + "</text>"; if (n > 1) h += "<text x='" + X(n) + "' y='" + (H - 6) + "' text-anchor='end'>" + vnTime(pts[n].t).slice(0, 5) + "</text>"; }
+    h += "<line id='pCross' x1='0' x2='0' y1='" + top + "' y2='" + (H - bottom) + "' stroke='#7f93ad' stroke-width='1' stroke-dasharray='3 3' visibility='hidden'/>";
+    h += "<circle id='pDot' r='5' fill='" + col + "' stroke='#0d1420' stroke-width='2' visibility='hidden'/>";
+    h += "<circle r='4.5' cx='" + X(n) + "' cy='" + A.y(last) + "' fill='" + col + "' stroke='#0d1420' stroke-width='2'/>";
+    h += "<text x='" + Math.min(X(n), W - padR) + "' y='" + Math.max(A.y(last) - 10, 12) + "' text-anchor='end' style='fill:#e6eef8;font-weight:700'>" + money(last) + "</text>";
+    h += "<rect x='" + padL + "' y='0' width='" + (W - padL - padR) + "' height='" + H + "' fill='transparent' id='pHit'/>";
+    svg.innerHTML = h;
+    var hit = svg.querySelector("#pHit"), cross = svg.querySelector("#pCross"), dot = svg.querySelector("#pDot");
+    var move = function (e) {
+      var r = svg.getBoundingClientRect(), mx = (e.clientX - r.left) * W / r.width, i = Math.max(1, Math.min(n, Math.round((mx - padL) / ((W - padL - padR) / (n || 1)))));
+      if (!n) return; var p = pts[i], x = X(i), y = A.y(p.c);
+      cross.setAttribute("x1", x); cross.setAttribute("x2", x); cross.setAttribute("visibility", "visible");
+      dot.setAttribute("cx", x); dot.setAttribute("cy", y); dot.setAttribute("visibility", "visible");
+      tip(e, "<b>Lệnh #" + p.n + "</b> · " + vnTime(p.t) + "<br>" + esc(p.x.p) + " " + p.x.side + ": <b style='color:" + (p.x.v >= 0 ? "#12d18e" : "#ff5d73") + "'>" + money(p.x.v) + "</b>" + (p.x.est ? " (ước tính)" : "") + "<br>Cộng dồn: <b>" + money(p.c) + "</b>");
+    };
+    hit.addEventListener("mousemove", move);
+    hit.addEventListener("mouseleave", function (e) { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); tip(e, ""); });
+  }
+  function barChart(svg, dl) {
+    var W = svg.clientWidth || svg.parentNode.clientWidth || 400, H = 220, padL = 58, padR = 8, top = 16, bottom = 24;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("height", H);
+    var vals = dl.map(function (d) { return d.v; }), A = axisY(Math.min.apply(null, vals), Math.max.apply(null, vals), H, top, bottom);
+    var slot = (W - padL - padR) / dl.length, bw = Math.max(3, Math.min(36, slot - 2)), y0 = A.y(0), h = "";
+    A.ticks.forEach(function (v) { var y = A.y(v); h += "<line x1='" + padL + "' x2='" + (W - padR) + "' y1='" + y + "' y2='" + y + "' stroke='" + (v === 0 ? "#3a4d68" : "#16243a") + "'/><text x='" + (padL - 8) + "' y='" + (y + 4) + "' text-anchor='end'>" + (v > 0 ? "+" : "") + v.toLocaleString("en-US") + "$</text>"; });
+    var every = Math.ceil(dl.length / Math.max(1, Math.floor((W - padL) / 46)));
+    dl.forEach(function (d, i) {
+      var cx = padL + slot * i + slot / 2, y = A.y(d.v), hgt = Math.abs(y - y0), col = d.v >= 0 ? "#12d18e" : "#ff5d73", rr = Math.min(4, bw / 2, hgt);
+      if (hgt >= 0.5) {
+        // rounded at the data end only, flat on the zero line
+        var x0 = cx - bw / 2, x1 = cx + bw / 2;
+        h += d.v >= 0
+          ? "<path d='M" + x0 + " " + y0 + " V" + (y + rr) + " Q" + x0 + " " + y + " " + (x0 + rr) + " " + y + " H" + (x1 - rr) + " Q" + x1 + " " + y + " " + x1 + " " + (y + rr) + " V" + y0 + " Z' fill='" + col + "'/>"
+          : "<path d='M" + x0 + " " + y0 + " V" + (y - rr) + " Q" + x0 + " " + y + " " + (x0 + rr) + " " + y + " H" + (x1 - rr) + " Q" + x1 + " " + y + " " + x1 + " " + (y - rr) + " V" + y0 + " Z' fill='" + col + "'/>";
+      }
+      if (i % every === 0 || i === dl.length - 1) h += "<text x='" + cx + "' y='" + (H - 6) + "' text-anchor='middle'>" + d.d.slice(8) + "/" + d.d.slice(5, 7) + "</text>";
+      h += "<rect class='pb' data-i='" + i + "' x='" + (padL + slot * i) + "' y='0' width='" + slot + "' height='" + (H - bottom) + "' fill='transparent'/>";
+    });
+    svg.innerHTML = h;
+    svg.querySelectorAll(".pb").forEach(function (r) {
+      r.addEventListener("mousemove", function (e) { var d = dl[+r.getAttribute("data-i")]; tip(e, "<b>" + d.d.slice(8) + "/" + d.d.slice(5, 7) + "</b><br>" + (d.v ? "<b style='color:" + (d.v >= 0 ? "#12d18e" : "#ff5d73") + "'>" + money(d.v) + "</b>" : "không có lệnh đóng")); });
+      r.addEventListener("mouseleave", function (e) { tip(e, ""); });
+    });
+  }
+  var pnlResize = 0;
+  addEventListener("resize", function () { clearTimeout(pnlResize); pnlResize = setTimeout(function () { if (pnlList && pnlList.length && $("pLine")) drawPnl(); }, 150); });
+  function shown(it) { return it.t === "bool" ? !!it.v : String(it.v); }
+  function inputVal(k) { var el = rows[k].input; return items[k].t === "bool" ? el.checked : String(el.value).trim(); }
+  function mark(k) {
+    var v = inputVal(k), it = items[k];
+    var same = it.t === "number" || it.t === "int" ? v !== "" && +String(v).replace(",", ".") === +it.v : v === shown(it);
+    if (same) delete dirty[k]; else dirty[k] = v;
+    rows[k].row.classList.toggle("dirty", !same); bar();
+  }
+  function bar() { badges(); var n = Object.keys(dirty).length; $("bar").classList.toggle("show", n > 0); $("barText").textContent = n + " thay đổi chưa lưu"; }
+  function setInput(k) { var it = items[k], el = rows[k].input; if (it.t === "bool") el.checked = !!it.v; else el.value = it.v; }
+  // Leo 10/11: the bot says which page each setting goes on (g) and which ones are hidden (h); this file names none.
+  function render() {
+    var host = $("groups"); host.innerHTML = ""; $("quick").innerHTML = ""; rows = {};
+    var buckets = GROUPS.map(function () { return []; });
+    META.items.forEach(function (m) { if (m.h) return; var it = items[m.k]; if (m.g >= 0 && m.g < GROUPS.length) { buckets[m.g].push(it); return; } for (var g = 0; g < GROUPS.length; g++) if (GROUPS[g][1].test(it.k)) { buckets[g].push(it); break; } });
+    buckets.forEach(function (list, g) {
+      var pg = g === 0 ? "home" : "g" + g;
+      var card = document.createElement("div"); card.className = "card";
+      card.innerHTML = "<h2>" + esc(GROUPS[g][0]) + "<span class='n'>" + list.length + " mục</span></h2><div class='rows'></div>";
+      var box = card.querySelector(".rows");
+      if (!list.length) box.innerHTML = "<div class='note'>Không có mục nào.</div>";
+      list.forEach(function (it) {
+        var row = document.createElement("div"); row.className = "row" + (it.t === "bool" ? " b" : "");
+        var hint = it.t === "number" || it.t === "int" ? " · " + it.min + "–" + it.max : "";
+        row.innerHTML = "<label>" + esc(it.l) + "<small>" + esc(it.k) + hint + "</small></label><div class='in'></div>";
+        var input;
+        if (it.t === "bool") {
+          var sw = document.createElement("label"); sw.className = "sw"; input = document.createElement("input"); input.type = "checkbox";
+          sw.appendChild(input); sw.appendChild(document.createElement("span")); row.querySelector(".in").appendChild(sw);
+        } else if (it.t === "choice") {
+          input = document.createElement("select");
+          (it.ch || []).forEach(function (c) { var o = document.createElement("option"); o.value = String(c).split(" · ")[0]; o.textContent = c; input.appendChild(o); });
+          row.querySelector(".in").appendChild(input);
+        } else {
+          input = document.createElement("input"); input.type = "text";
+          if (it.t === "number" || it.t === "int") input.inputMode = "decimal";
+          row.querySelector(".in").appendChild(input);
+        }
+        rows[it.k] = {row: row, input: input, page: pg}; setInput(it.k);
+        input.addEventListener(it.t === "bool" || it.t === "choice" ? "change" : "input", function () { mark(it.k); });
+        box.appendChild(row);
+      });
+      if (g === 0) { $("quick").appendChild(card); return; }
+      var sec = document.createElement("section"); sec.className = "pg"; sec.setAttribute("data-p", pg); sec.hidden = page !== pg;
+      sec.appendChild(card); host.appendChild(sec);
+    });
+    show(page);
+  }
+  function renderKeys() {
+    var box = $("keys"), have = (acc && acc.keys) || {};
+    (META.secrets || []).forEach(function (s) {
+      var row = box.querySelector("[data-k='" + s.k + "']");
+      if (!row) {
+        row = document.createElement("div"); row.className = "row"; row.setAttribute("data-k", s.k);
+        row.innerHTML = "<label>" + esc(s.l) + " <span class='tag'></span></label><div class='in'><input type='password' autocomplete='new-password' placeholder='dán key mới'><button class='btn' type='button'>Lưu key</button></div>";
+        row.querySelector("button").addEventListener("click", function () {
+          var inp = row.querySelector("input"), v = inp.value.trim();
+          if (!v) return;
+          if (!PASS_OK) { alert("Nhập mật khẩu mã hóa key ở trang danh sách trước."); return; }
+          var line = log("🔑 " + esc(s.l) + ": đang mã hóa…");
+          seal(v, PASS).then(function (sealed) { var p = {}; p[s.k] = sealed; return api("PATCH", "accounts/" + cur + "/keys", p); }).then(function () { return bump(cur); })
+            .then(function () { inp.value = ""; line.innerHTML += " đã lưu (mã hóa). Bot nhận trong ~5 giây."; loadAcc(); })
+            .catch(function (e) { line.innerHTML = "❌ " + (e.denied ? deniedText() : "lỗi (" + esc(e.message) + ")"); });
+        });
+        box.appendChild(row);
+      }
+      var on = !!have[s.k], tag = row.querySelector(".tag"); tag.className = "tag " + (on ? "ok" : "no"); tag.textContent = on ? "đã có" : "chưa có";
+    });
+  }
+  function emergency() {
+    var p = items.tamdung, l = items.live_bat, ok = acc && acc.values;
+    var bp = $("bPause"), bl = $("bLive");
+    bp.disabled = !ok || !p; bl.disabled = !ok || !l;
+    if (ok && p) { bp.textContent = p.v ? "▶ CHO VÀO LỆNH LẠI" : "⏸ DỪNG VÀO LỆNH MỚI"; bp.className = "btn " + (p.v ? "green" : ""); }
+    if (ok && l) { bl.textContent = l.v ? "⛔ TẮT LỆNH THẬT" : "💰 BẬT LẠI LỆNH THẬT"; bl.className = "btn " + (l.v ? "red" : "ghost"); }
+  }
+  $("bPause").addEventListener("click", function () {
+    var on = !items.tamdung.v;
+    if (confirm(on ? "Dừng vào lệnh mới?" : "Cho bot vào lệnh mới lại?")) save({tamdung: on ? "bat" : "tat"});
+  });
+  $("bLive").addEventListener("click", function () {
+    var on = !items.live_bat.v;
+    if (confirm(on ? "BẬT lại đặt lệnh thật trên BingX?" : "TẮT đặt lệnh thật trên BingX? Lệnh đang chạy trên sàn vẫn giữ SL/TP.")) save({live_bat: on ? "bat" : "tat"});
+  });
+  $("bUndo").addEventListener("click", function () { Object.keys(dirty).forEach(function (k) { setInput(k); rows[k].row.classList.remove("dirty"); }); dirty = {}; bar(); });
+  $("bSave").addEventListener("click", function () {
+    var keys = Object.keys(dirty); if (!keys.length) return;
+    if (dirty.san === "that" && !confirm("Chuyển sàn sang TIỀN THẬT? Bot sẽ đặt lệnh bằng tiền thật nếu đang bật lệnh thật.")) return;
+    var patch = {};
+    keys.forEach(function (k) { var v = dirty[k]; patch[k] = items[k].t === "bool" ? (v ? "bat" : "tat") : String(v).replace(",", "."); rows[k].row.classList.remove("dirty"); });
+    dirty = {}; bar(); save(patch);
+  });
+  function log(html) {
+    var box = $("log"); if (box.querySelector(".note")) box.innerHTML = "";
+    var d = document.createElement("div");
+    d.innerHTML = "<span class='t'>" + new Date().toTimeString().slice(0, 8) + "</span>" + html;
+    box.insertBefore(d, box.firstChild); return d;
+  }
+  // Save = write the account's values in the database. The bot applies them (now, or when it starts) and answers in "applied".
+  function save(patch) {
+    var t0 = Date.now(), lines = {}, id = cur;
+    Object.keys(patch).forEach(function (k) {
+      var it = items[k] || {l: k};
+      lines[k] = log("💾 " + esc(it.l) + " → <b>" + esc(patch[k]) + "</b>: đang lưu…");
+      if (items[k]) { items[k].v = it.t === "bool" ? patch[k] === "bat" : patch[k]; if (rows[k]) setInput(k); }
+    });
+    emergency();
+    api("PATCH", "accounts/" + id + "/values", patch).then(function () { return bump(id); }).then(function () {
+      Object.keys(lines).forEach(function (k) { lines[k].innerHTML = lines[k].innerHTML.replace("đang lưu…", "đã lưu vào database, chờ bot áp dụng…"); });
+      var tries = 0;
+      (function poll() {
+        if (cur !== id) return;
+        api("GET", "accounts/" + id + "/applied").then(function (a) {
+          a = a || {};
+          Object.keys(lines).forEach(function (k) {
+            var r = a[k];
+            if (r && r.at >= t0 - 2000) {
+              lines[k].innerHTML = "<span class='t'>" + new Date().toTimeString().slice(0, 8) + "</span>" + esc(r.m);
+              if (!r.ok && items[k]) { items[k].v = items[k].t === "bool" ? r.v === "bat" : r.v; if (rows[k]) setInput(k); emergency(); }
+              delete lines[k];
+            }
+          });
+          if (!Object.keys(lines).length) return;
+          if (++tries > 20) {
+            Object.keys(lines).forEach(function (k) { lines[k].innerHTML += " <span class='warn'>bot chưa áp dụng (đang tắt hoặc mất mạng): đã nằm trong database, bot bật lên sẽ tự lấy.</span>"; });
+            return;
+          }
+          setTimeout(poll, 1500);
+        }).catch(function () { setTimeout(poll, 3000); });
+      })();
+    }).catch(function (e) {
+      Object.keys(lines).forEach(function (k) { lines[k].innerHTML = "❌ " + (e.denied ? deniedText() : "lỗi mạng (" + esc(e.message) + ")"); });
+    });
+  }
+  $("bRename").addEventListener("click", function () {
+    var n = prompt("Tên mới:", acc.name || cur); if (!n) return;
+    api("PATCH", "accounts/" + cur, {name: n.trim(), rev: Date.now()}).then(function () { $("aName").textContent = n.trim(); }).catch(fail);
+  });
+  $("bDelete").addEventListener("click", function () {
+    var t = prompt("Xóa tài khoản \"" + (acc.name || cur) + "\" (cả key)? Bot đang chạy mã này sẽ DỪNG vào lệnh mới.\nGõ đúng mã tài khoản để xác nhận: " + cur);
+    if (t !== cur) return;
+    var gone = cur;
+    bump(gone).then(function () { return api("DELETE", "accounts/" + gone); }).then(function () { cur = ""; $("vAcc").hidden = true; $("vList").hidden = false; return loadList(); }).catch(fail);
+  });
+  $("bBackup").addEventListener("click", function () {
+    var data = {name: acc.name, values: acc.values || {}, base: acc.base ? JSON.parse(acc.base) : null};
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: "application/json"}));
+    a.download = "cyberwhale-" + cur + "-" + new Date().toISOString().slice(0, 10) + ".json"; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  });
+  function fail(e) {
+    if (e && e.message === "login") { showLogin(); return; }
+    var html = e && e.denied ? deniedText() : "Lỗi mạng: " + esc(e && e.message);
+    if (cur) $("st").innerHTML = "<span class='dot off'></span>" + html; else $("accList").innerHTML = "<div class='note'>" + html + "</div>";
+  }
+  function start() {
+    drawPass();
+    if (PASS) setPass(PASS);
+    api("GET", "meta").then(function (m) { if (m && m.items) { META = m; metaDone = true; } }).catch(function () {});
+    loadList().catch(fail);
+    var listUtc = Date.now();
+    setInterval(function () {
+      if (document.hidden) return;
+      if (cur) tickAcc().catch(function () {});
+      else if (Date.now() - listUtc > 30e3) { listUtc = Date.now(); loadList().catch(function () {}); }
+    }, 10e3);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden && cur) tickAcc().catch(function () {}); });
+    setInterval(function () { if (cur) drawStatus(); }, 5e3);
+  }
+  if (!DB) { showLogin("Chưa điền link Firebase trong file."); return; }
+  if (REFRESH) token().then(showApp).catch(function () { showLogin(); }); else showLogin();
+})();
+</script>
+</body>
+</html>

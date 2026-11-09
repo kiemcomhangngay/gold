@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biểu đồ Vàng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script>
+  window.CW_DB_URL = "https://my-project-gold-bce37-default-rtdb.asia-southeast1.firebasedatabase.app";
+</script>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+:root{--bg:#070b12;--panel:#0d1420;--line:#1c2a3f;--text:#e6eef8;--muted:#7f93ad;--gold:#f5c451;--win:#12d18e;--loss:#ff5d73;--wait:#f0b44c;--run:#38bdf8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:18px;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1 .px{font-family:"JetBrains Mono",monospace;color:var(--text)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.chip{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:7px 12px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer}
+.chip.on{background:var(--gold);color:#0b1220;border-color:var(--gold)}
+#chart{position:relative;height:min(70vh,560px);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+#st{color:var(--muted);font-size:13px;margin-top:10px;line-height:1.5}
+#st b{color:var(--text)}
+#login{max-width:360px;margin:12vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+#login h2{font-size:17px;color:var(--gold);margin-bottom:14px}
+#login label{display:block;color:var(--muted);font-size:12px;margin:10px 0 4px}
+#login input{width:100%;background:#0a111c;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:10px;font-size:14px}
+#login button{width:100%;margin-top:16px;background:var(--gold);color:#0b1220;border:0;border-radius:9px;padding:11px;font-weight:800;font-size:14px;cursor:pointer}
+#login .err{color:var(--loss);font-size:13px;margin-top:10px;min-height:18px}
+#out{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:6px 10px;font-size:12px;cursor:pointer}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:8px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<form id="login" hidden>
+  <h2>🔒 Đăng nhập xem biểu đồ</h2>
+  <div id="keyRow"><label for="key">Web API Key (Firebase → Project settings, chỉ nhập lần đầu)</label><input id="key" autocomplete="off"></div>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
+  <label for="pw">Mật khẩu</label><input id="pw" type="password" autocomplete="current-password" required>
+  <button type="submit">Đăng nhập</button>
+  <div class="err" id="lerr"></div>
+</form>
+<div class="wrap" id="app" hidden>
+  <h1>VÀNG · BINGX <span class="px" id="px">–</span><button id="out" type="button">Đăng xuất</button></h1>
+  <div class="bar" id="tf">
+    <button class="chip" data-i="5m">5m</button>
+    <button class="chip" data-i="15m">15m</button>
+    <button class="chip on" data-i="30m">30m</button>
+    <button class="chip" data-i="1h">1h</button>
+    <button class="chip" data-i="4h">4h</button>
+  </div>
+  <div id="chart"></div>
+  <div class="legend">
+    <span><i style="background:#e6eef8"></i>Giá vào</span>
+    <span><i style="background:var(--win)"></i>Chốt lời</span>
+    <span><i style="background:var(--loss)"></i>Cắt lỗ</span>
+    <span>▲▼ khớp lệnh · ● đóng lệnh</span>
+    <span><i style="background:rgba(245,196,81,.6);height:9px"></i>Vùng vào lệnh</span>
+    <span><i style="background:rgba(190,102,242,.6);height:9px"></i>Vùng gốc</span>
+  </div>
+  <div id="st">Đang tải nến…</div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var DB = (window.CW_DB_URL || "").replace(/\/+$/, ""), NODE = "cyberwhale";
+  var iv = "30m";
+  // Leo 07/11: only Leo reads the candles (private/ node, Firebase Rules: his login only). The sign-in is kept in this
+  // browser (refresh token); "Đăng xuất" forgets it.
+  function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+  // The project's Web API Key: public by design (it only names the project); Rules + the login guard the data.
+  var KEY = ls("cw_key") || "AIzaSyCAVLJWC65TP2eOvei6nxqirjwc_RXD9rY", REFRESH = ls("cw_rt") || "", TOKEN = "", TOKEN_UNTIL = 0;
+  function signedIn(j) {
+    TOKEN = j.idToken || j.id_token; TOKEN_UNTIL = Date.now() + (+(j.expiresIn || j.expires_in || 3600) - 120) * 1000;
+    REFRESH = j.refreshToken || j.refresh_token || REFRESH; ls("cw_rt", REFRESH);
+  }
+  function token() {
+    if (TOKEN && Date.now() < TOKEN_UNTIL) return Promise.resolve(TOKEN);
+    if (!REFRESH || !KEY) return Promise.reject(new Error("login"));
+    return fetch("https://securetoken.googleapis.com/v1/token?key=" + encodeURIComponent(KEY), {method: "POST",
+      headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(REFRESH)})
+      .then(function (r) { return r.json(); }).then(function (j) { if (!j.id_token) throw new Error("login"); signedIn(j); return TOKEN; });
+  }
+  function priv(path) {
+    return token().then(function (t) { return fetch(DB + "/private/" + path + ".json?auth=" + encodeURIComponent(t), {cache: "no-store"}); })
+      .then(function (r) { if (r.status === 401) { TOKEN = ""; throw new Error("Tài khoản này không có quyền xem"); } return r.json(); });
+  }
+  function showLogin(msg) {
+    document.getElementById("app").hidden = true; document.getElementById("login").hidden = false;
+    document.getElementById("keyRow").hidden = !!KEY; document.getElementById("lerr").textContent = msg || "";
+  }
+  var started = false;
+  function showApp() { document.getElementById("login").hidden = true; document.getElementById("app").hidden = false; if (!started) { started = true; start(); } }
+  document.getElementById("login").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var k = document.getElementById("key").value.trim(); if (k) KEY = k;
+    var err = document.getElementById("lerr"); err.textContent = "Đang đăng nhập…";
+    fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + encodeURIComponent(KEY), {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({email: document.getElementById("em").value.trim(), password: document.getElementById("pw").value, returnSecureToken: true})})
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.idToken) { var m = j.error && j.error.message || ""; err.textContent = /API_KEY|API key/i.test(m) ? "Web API Key sai." : /PASSWORD|EMAIL|CREDENTIAL|USER/i.test(m) ? "Sai email hoặc mật khẩu." : "Không đăng nhập được (" + m + ")."; if (/API_KEY|API key/i.test(m)) { KEY = ""; ls("cw_key", null); document.getElementById("keyRow").hidden = false; } return; }
+        ls("cw_key", KEY); signedIn(j); document.getElementById("pw").value = ""; showApp();
+      }).catch(function (x) { err.textContent = "Lỗi mạng: " + x.message; });
+  });
+  document.getElementById("out").addEventListener("click", function () { REFRESH = ""; TOKEN = ""; ls("cw_rt", null); location.reload(); });
+  var STEP = {"5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400};
+  var st = document.getElementById("st");
+  var el = document.getElementById("chart");
+  var chart = LightweightCharts.createChart(el, {
+    autoSize: true,
+    layout: {background: {color: "#0d1420"}, textColor: "#7f93ad", fontFamily: "JetBrains Mono, monospace"},
+    grid: {vertLines: {color: "#132033"}, horzLines: {color: "#132033"}},
+    rightPriceScale: {borderColor: "#1c2a3f"},
+    timeScale: {borderColor: "#1c2a3f", timeVisible: true, secondsVisible: false, rightOffset: 15},
+    crosshair: {mode: 0},
+    localization: {locale: "en-US", timeFormatter: function (t) { return new Date(t * 1000 + 7 * 3600e3).toISOString().slice(5, 16).replace("T", " "); }}
+  });
+  var series = chart.addCandlestickSeries({upColor: "#12d18e", downColor: "#ff5d73", borderVisible: false, wickUpColor: "#12d18e", wickDownColor: "#ff5d73", priceFormat: {type: "price", precision: 2, minMove: 0.01}});
+  var lines = [], trades = [], lastBars = [], scrolledTf = "";
+
+  // VN time on the axis: shift the UTC seconds by +7 h.
+  function vnSec(ms) { return Math.floor(ms / 1000) + 7 * 3600; }
+  function rows(j) {
+    var d = j && (j.data || j);
+    if (!Array.isArray(d)) throw new Error((j && (j.msg || j.message)) || "dữ liệu lạ");
+    return d.map(function (k) {
+      var a = Array.isArray(k);
+      return {time: vnSec(+(a ? k[0] : k.time)), open: +(a ? k[1] : k.open), high: +(a ? k[2] : k.high), low: +(a ? k[3] : k.low), close: +(a ? k[4] : k.close)};
+    }).sort(function (x, y) { return x.time - y.time; }).filter(function (b, i, s) { return !i || b.time !== s[i - 1].time; });
+  }
+  // Leo 07/11: BingX blocks the browser, so the bot pushes closed candles to Firebase (candles/<tf>) and the live price
+  // (price.GOLD, every ~3 s) builds the candle that is still open.
+  var live = null;
+  function load() {
+    st.innerHTML = "Đang tải nến " + iv + "…";
+    priv("candles/" + iv).then(function (d) {
+      if (!d || !d.bars || !d.bars.length) { st.innerHTML = "❌ <b>Chưa có nến " + iv + "</b>: bot chưa đẩy nến lên (cần bản bot mới có đẩy nến, và đang bật trang tín hiệu)."; series.setData([]); lastBars = []; return; }
+      lastBars = rows(d.bars); live = null; series.setData(lastBars); draw();
+      // Room on the right for the open trade box (TradingView style); only on a timeframe's first load so a reload never undoes panning.
+      if (scrolledTf !== iv) { scrolledTf = iv; setTimeout(function () { chart.timeScale().scrollToPosition(15, false); }, 50); }
+      st.innerHTML = "✅ <b>" + lastBars.length + " nến " + iv + "</b> từ bot · cập nhật " + new Date(d.at).toLocaleTimeString("vi-VN", {timeZone: "Asia/Ho_Chi_Minh"}) + ". Giờ trên trục là giờ VN.";
+    }).catch(function (e) { if (e.message === "login") { showLogin("Phiên đăng nhập hết hạn, đăng nhập lại."); return; } st.innerHTML = "❌ Không đọc được nến (" + e.message + ")."; });
+  }
+  function tick() {
+    fetch(DB + "/" + NODE + "/price.json", {cache: "no-store"}).then(function (r) { return r.json(); }).then(function (p) {
+      if (!p || !p.GOLD || !lastBars.length) return;
+      var px = +p.GOLD, s = STEP[iv], t = Math.floor(vnSec(p.at || Date.now()) / s) * s, last = lastBars[lastBars.length - 1];
+      document.getElementById("px").textContent = px.toFixed(2);
+      if (t < last.time) return;
+      if (t === last.time) { last = {time: t, open: last.open, high: Math.max(last.high, px), low: Math.min(last.low, px), close: px}; lastBars[lastBars.length - 1] = last; series.update(last); return; }
+      // A new candle: a closed one went past the newest pushed candle, reload once the bot has pushed it.
+      if (live && t > live.time) setTimeout(load, 20000);
+      var o = live ? (live.time === t ? live.open : live.close) : last.close;
+      live = live && live.time === t ? {time: t, open: o, high: Math.max(live.high, px), low: Math.min(live.low, px), close: px}
+        : {time: t, open: o, high: Math.max(o, px), low: Math.min(o, px), close: px};
+      series.update(live);
+      requestAnimationFrame(drawZones);
+    }).catch(function () {});
+  }
+
+  // Trades from the bot (same data as the signal page): lines for the open ones, markers for fills / closes.
+  function snap(t) { var s = STEP[iv]; return Math.floor(vnSec(t) / s) * s; }
+  function draw() {
+    lines.forEach(function (l) { series.removePriceLine(l); }); lines = [];
+    var mk = [], first = lastBars.length ? lastBars[0].time : 0;
+    trades.forEach(function (t) {
+      if (!t || t.metal && t.metal !== "GOLD") return;
+      var buy = t.side === "MUA", live = t.status === "CHAY" || t.status === "CHO";
+      if (live) {
+        var tag = (buy ? "MUA" : "BÁN") + (t.status === "CHO" ? " chờ" : "");
+        lines.push(series.createPriceLine({price: +t.entry, color: "#e6eef8", lineWidth: 1, lineStyle: t.status === "CHO" ? 2 : 0, axisLabelVisible: true, title: tag}));
+        if (t.tp) lines.push(series.createPriceLine({price: +t.tp, color: "#12d18e", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "TP"}));
+        if (t.sl) lines.push(series.createPriceLine({price: +t.sl, color: "#ff5d73", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "SL"}));
+      }
+      if (t.fillAt && snap(t.fillAt) >= first)
+        mk.push({time: snap(t.fillAt), position: buy ? "belowBar" : "aboveBar", color: buy ? "#12d18e" : "#ff5d73", shape: buy ? "arrowUp" : "arrowDown", text: (buy ? "MUA " : "BÁN ") + (+t.entry).toFixed(2)});
+      if (t.closedAt && t.fillAt && snap(t.closedAt) >= first && t.exit != null) {
+        var win = t.move != null ? t.move >= 0 : true;
+        mk.push({time: snap(t.closedAt), position: buy ? "aboveBar" : "belowBar", color: win ? "#12d18e" : "#ff5d73", shape: "circle", text: (t.move != null ? (t.move >= 0 ? "+" : "") + (+t.move).toFixed(2) : "đóng")});
+      }
+    });
+    mk.sort(function (a, b) { return a.time - b.time; });
+    series.setMarkers(mk);
+    requestAnimationFrame(drawZones);
+  }
+  // ---- Leo 07/11: the signal zones (private/analysis, login only) drawn on a canvas over the chart ----
+  var zones = [], cv = document.createElement("canvas");
+  cv.style.cssText = "position:absolute;left:0;top:0;pointer-events:none;z-index:3";
+  el.appendChild(cv);
+  var TF = {"5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400};
+  function xAt(t) {
+    // t = VN seconds; the coordinate of the bar that holds it (null before the data, right edge after it).
+    if (!lastBars.length) return null;
+    var s = STEP[iv], b = Math.floor(t / s) * s, ts = chart.timeScale();
+    if (b < lastBars[0].time) return null;
+    var x = ts.timeToCoordinate(b);
+    if (x == null) { var lr = ts.logicalToCoordinate(lastBars.length - 1 + (b - lastBars[lastBars.length - 1].time) / s); x = lr; }
+    return x;
+  }
+  function drawZones() {
+    var w = el.clientWidth, h = el.clientHeight, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + "px"; cv.style.height = h + "px"; }
+    var g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    if (!lastBars.length) return;
+    var plotW = w - chart.priceScale("right").width(), plotH = h - chart.timeScale().height();
+    g.save(); g.beginPath(); g.rect(0, 0, plotW, plotH); g.clip();
+    g.font = "600 10px 'Plus Jakarta Sans', sans-serif";
+    // Leo 08/11: TradingView-style position box: red = entry→SL, green = entry→TP, from the fill to the right edge.
+    trades.forEach(function (t) {
+      // Leo 08/11 21:28: only the trades still held (filled and running); closed and pending ones get no box.
+      if (!t || t.metal && t.metal !== "GOLD" || t.status !== "CHAY" || !t.fillAt || !t.entry || !t.sl || !t.tp) return;
+      var startMs = t.fillAt, pending = false, endMs = 0;
+      var xa = xAt(vnSec(startMs)), xb = endMs ? xAt(vnSec(endMs) + STEP[iv]) : plotW;
+      if (xa == null || xb == null || xb < 0 || xa > plotW) return;
+      if (xb - xa < 6) xb = xa + 6;
+      var ye = series.priceToCoordinate(+t.entry), ys = series.priceToCoordinate(+t.sl), yt = series.priceToCoordinate(+t.tp);
+      if (ye == null || ys == null || yt == null) return;
+      function band(y1, y2, rgb, label) {
+        var top = Math.min(y1, y2), hgt = Math.max(1, Math.abs(y2 - y1));
+        g.fillStyle = "rgba(" + rgb + "," + (pending ? ".10" : ".20") + ")"; g.fillRect(xa, top, xb - xa, hgt);
+        g.strokeStyle = "rgba(" + rgb + ",.7)"; g.lineWidth = 1; g.setLineDash(pending ? [4, 3] : []); g.strokeRect(xa, top, xb - xa, hgt); g.setLineDash([]);
+        g.fillStyle = "rgba(" + rgb + ",1)"; g.fillText(label, xa + 4, y2 < y1 ? top + 11 : top + hgt - 4);
+      }
+      var buy = t.side === "MUA";
+      band(ye, yt, "18,209,142", "TP " + (+t.tp).toFixed(2) + " (" + (buy ? "+" : "-") + Math.abs(t.tp - t.entry).toFixed(2) + ")");
+      band(ye, ys, "255,93,115", "SL " + (+t.sl).toFixed(2) + " (" + (buy ? "-" : "+") + Math.abs(t.sl - t.entry).toFixed(2) + ")");
+      g.strokeStyle = "#e6eef8"; g.lineWidth = 1; g.setLineDash(pending ? [4, 3] : []);
+      g.beginPath(); g.moveTo(xa, ye); g.lineTo(xb, ye); g.stroke(); g.setLineDash([]);
+    });
+    zones.forEach(function (z) {
+      var step = TF[z.tf] || 1800, alert = vnSec(z.alertAt), c1 = alert - 3 * step;
+      var endMs = z.closedAt || (z.status === "EXPIRED" || z.status === "CANCELLED" ? z.alertAt : 0);
+      var x1 = xAt(c1), x2 = endMs ? xAt(vnSec(endMs) + STEP[iv]) : plotW;
+      if (x1 == null || x2 == null || x2 < 0 || x1 > plotW) return;
+      function box(xa, lo, hi, rgb, name) {
+        var ya = series.priceToCoordinate(hi), yb = series.priceToCoordinate(lo);
+        if (ya == null || yb == null) return;
+        g.fillStyle = "rgba(" + rgb + ",.16)"; g.strokeStyle = "rgba(" + rgb + ",.85)"; g.setLineDash([4, 3]); g.lineWidth = 1;
+        g.fillRect(xa, ya, Math.max(2, x2 - xa), Math.max(1, yb - ya)); g.strokeRect(xa, ya, Math.max(2, x2 - xa), Math.max(1, yb - ya));
+        g.setLineDash([]); g.fillStyle = "rgba(" + rgb + ",1)"; g.fillText(name, xa + 4, ya + 11);
+      }
+      if (z.bHi && z.bLo) {
+        // The base candle: the one whose wicks match the base zone.
+        var bt = c1 - step;
+        if (z.tf === iv) for (var i = lastBars.length - 1; i >= 0; i--) {
+          var b = lastBars[i]; if (b.time >= c1) continue; if (b.time < c1 - 8 * step) break;
+          if (Math.abs(b.high - z.bHi) < 0.02 && Math.abs(b.low - z.bLo) < 0.02) { bt = b.time; break; }
+        }
+        var xo = xAt(bt); box(xo == null ? x1 : xo, z.bLo, z.bHi, "190,102,242", "VÙNG GỐC");
+      }
+      box(x1, z.aLo, z.aHi, "245,196,81", "VÙNG " + (z.side === "MUA" ? "tăng" : "giảm") + (z.real ? "" : " · paper"));
+    });
+    g.restore();
+  }
+  chart.timeScale().subscribeVisibleLogicalRangeChange(function () { requestAnimationFrame(drawZones); });
+  new ResizeObserver(function () { requestAnimationFrame(drawZones); }).observe(el);
+  function loadZones() {
+    priv("analysis").then(function (d) { zones = d && d.trades ? (Array.isArray(d.trades) ? d.trades : Object.values(d.trades)) : []; drawZones(); }).catch(function () {});
+  }
+
+  function loadTrades() {
+    if (!DB) return;
+    fetch(DB + "/" + NODE + "/trades.json", {cache: "no-store"}).then(function (r) { return r.json(); })
+      .then(function (d) { trades = Array.isArray(d) ? d : d ? Object.keys(d).map(function (k) { return d[k]; }) : []; draw(); }).catch(function () {});
+  }
+
+  document.getElementById("tf").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip"); if (!b) return;
+    document.querySelectorAll("#tf .chip").forEach(function (x) { x.classList.toggle("on", x === b); });
+    iv = b.dataset.i; load();
+  });
+  function start() {
+    load(); loadTrades(); loadZones();
+    setInterval(tick, 3000);
+    setInterval(loadTrades, 15000);
+    setInterval(loadZones, 30000);
+  }
+  if (REFRESH && KEY) token().then(showApp, function () { showLogin(); }); else showLogin();
+})();
+</script>
+</body>
+</html>
