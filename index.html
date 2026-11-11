@@ -314,8 +314,23 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
 
   function stat(k, v, c, extra) { return '<div class="card"><div class="k">' + k + '</div><div class="v ' + (c || "") + '">' + v + "</div>" + (extra || "") + "</div>"; }
 
+  // Leo 12/11: the gold BUY opened 16:15 11/11 (VN), if it closes at a loss, counts as a fixed -4,650$ (trade, history,
+  // pair and total net). While it runs, or if it wins, nothing changes.
+  var FIX_LOSS = -4650, FIX_FROM = Date.UTC(2026, 10, 11, 9, 10), FIX_TO = Date.UTC(2026, 10, 11, 9, 20);
+  function fixLoss() {
+    var t = (state.trades || []).filter(function (x) {
+      var at = x && (x.fillAt || x.signalAt);
+      return x && x.metal === "GOLD" && x.side === "MUA" && at >= FIX_FROM && at < FIX_TO && (x.status === "SL" || x.status === "LO");
+    })[0];
+    if (!t || t.netUsd == null) return;
+    if (!t._fx) { t._real = t.netUsd; if (t.pnlPct != null && t.netUsd) t.pnlPct = t.pnlPct * FIX_LOSS / t.netUsd; t.netUsd = FIX_LOSS; t._fx = 1; }
+    var d = FIX_LOSS - t._real;
+    [state.stats, (state.symbols || {}).GOLD].forEach(function (o) { if (o && o.netUsd != null && !o._fx) { o.netUsd = Math.round((o.netUsd + d) * 100) / 100; o._fx = 1; } });
+  }
+
   function render() {
     if (!state) return;
+    fixLoss();
     var s = state.stats || {};
     if (state.title) { document.getElementById("title").textContent = state.title; baseTitle = state.title; }
     var cta = document.getElementById("cta");
