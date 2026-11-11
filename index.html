@@ -368,7 +368,7 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
         + '<span class="badge ' + (buy ? "b-buy" : "b-sell") + '">' + (buy ? "▲ MUA" : "▼ BÁN") + "</span>"
         + '<span class="badge s-' + esc(t.status) + '">' + (STATUS[t.status] || esc(t.status)) + "</span>"
         + (t.status === "CHO" && t.hold ? '<span class="badge s-HOLD">⏸ TẠM HỦY</span>' : "")
-        + (t.dca ? '<span class="badge s-HUY">DCA x' + t.dca + "</span>" : "") + "</div>"
+        + "</div>"
         + '<div class="when">' + when + "</div></div>" + res
         + '<div class="levels"><div class="lv"><small>Giá vào</small><b>' + num(t.entry) + '</b></div><div class="lv"><small>Chốt lời</small><b style="color:var(--win)">' + num(t.tp)
         + '</b></div><div class="lv"><small>Cắt lỗ</small><b style="color:var(--loss)">' + num(t.sl) + "</b></div>"
@@ -406,7 +406,6 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
     return '<div class="row' + (miss ? " dim" : "") + '"><div class="tm">' + t1 + (t2 && t2 !== t1 ? "<small>" + t2 + "</small>" : "") + "</div>"
       + '<div class="mid"><div class="top"><span class="badge ' + (buy ? "b-buy" : "b-sell") + '">' + (buy ? "▲ MUA" : "▼ BÁN") + "</span>"
       + '<span class="badge s-' + esc(t.status) + '">' + (STATUS[t.status] || esc(t.status)) + "</span>"
-      + (t.dca ? '<span class="badge s-HUY">DCA x' + t.dca + "</span>" : "")
       + (filter === "ALL" && t.metal !== "GOLD" ? '<span class="name ' + cls(t.metal) + '" style="font-size:12px">' + esc(t.name) + "</span>" : "") + "</div>"
       + '<div class="px2">' + px + "</div>"
       + '<div class="lvl">TP <span style="color:var(--win)">' + num(t.tp) + '</span> · SL <span style="color:var(--loss)">' + num(t.sl) + "</span></div></div>"
@@ -493,7 +492,7 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
   // Leo 06/11: why the order is not on the exchange right now and when it comes back.
   function holdLine(t) {
     if (t.hold === "TIN") return '<div class="hold">⏸ Tạm hủy trên sàn vì giờ tin · ' + (t.holdUntil ? "đặt lại lúc <b>" + vn(t.holdUntil) + "</b>" : "đặt lại khi hết giờ tin") + " (nếu còn hạn)</div>";
-    if (t.hold === "DCA") return '<div class="hold">⏸ Tạm hủy trên sàn để lấy vốn DCA · đặt lại khi lệnh DCA đóng (nếu còn hạn)</div>';
+    if (t.hold) return '<div class="hold">⏸ Tạm hủy trên sàn · đặt lại sau (nếu còn hạn)</div>';
     return "";
   }
   function waitBox(t) {
