@@ -314,18 +314,24 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
 
   function stat(k, v, c, extra) { return '<div class="card"><div class="k">' + k + '</div><div class="v ' + (c || "") + '">' + v + "</div>" + (extra || "") + "</div>"; }
 
-  // Leo 12/11: the gold BUY opened 16:15 11/11 (VN), if it closes at a loss, counts as a fixed -4,650$ (trade, history,
-  // pair and total net). While it runs, or if it wins, nothing changes.
-  var FIX_LOSS = -4650, FIX_FROM = Date.UTC(2026, 10, 11, 9, 10), FIX_TO = Date.UTC(2026, 10, 11, 9, 20);
+  // Leo 12/11: the gold BUY opened 16:15 11/11 (VN), if it closes at a loss, counts as a fixed -4,650$; the TP trade
+  // that closed last before 07:53 12/11 (VN) shows its real BingX profit +150.18$. Pair and total net follow.
+  var FIX_FROM = Date.UTC(2026, 10, 11, 9, 10), FIX_TO = Date.UTC(2026, 10, 11, 9, 20), TP_CUT = Date.UTC(2026, 10, 12, 0, 53);
   function fixLoss() {
-    var t = (state.trades || []).filter(function (x) {
-      var at = x && (x.fillAt || x.signalAt);
-      return x && x.metal === "GOLD" && x.side === "MUA" && at >= FIX_FROM && at < FIX_TO && (x.status === "SL" || x.status === "LO");
-    })[0];
-    if (!t || t.netUsd == null) return;
-    if (!t._fx) { t._real = t.netUsd; if (t.pnlPct != null && t.netUsd) t.pnlPct = t.pnlPct * FIX_LOSS / t.netUsd; t.netUsd = FIX_LOSS; t._fx = 1; }
-    var d = FIX_LOSS - t._real;
-    [state.stats, (state.symbols || {}).GOLD].forEach(function (o) { if (o && o.netUsd != null && !o._fx) { o.netUsd = Math.round((o.netUsd + d) * 100) / 100; o._fx = 1; } });
+    var tr = state.trades || [], tpLast = null, dAll = 0, dPair = {};
+    tr.forEach(function (x) { if (x && (x.status === "TP" || x.status === "LOI") && x.closedAt && x.closedAt <= TP_CUT && (!tpLast || x.closedAt > tpLast.closedAt)) tpLast = x; });
+    tr.forEach(function (t) {
+      if (!t || t.netUsd == null) return;
+      var at = t.fillAt || t.signalAt, want = null;
+      if (t.metal === "GOLD" && t.side === "MUA" && at >= FIX_FROM && at < FIX_TO && (t.status === "SL" || t.status === "LO")) want = -4650;
+      if (t === tpLast) want = 150.18;
+      if (want == null) return;
+      if (!t._fx) { t._real = t.netUsd; if (t.pnlPct != null && t.netUsd) t.pnlPct = t.pnlPct * want / t.netUsd; t.netUsd = want; t._fx = 1; }
+      dAll += want - t._real; dPair[t.metal] = (dPair[t.metal] || 0) + want - t._real;
+    });
+    var fix = function (o, d) { if (!o || o.netUsd == null) return; if (o._base == null) o._base = o.netUsd; o.netUsd = Math.round((o._base + d) * 100) / 100; };
+    fix(state.stats, dAll);
+    Object.keys(state.symbols || {}).forEach(function (k) { fix(state.symbols[k], dPair[k] || 0); });
   }
 
   function render() {
