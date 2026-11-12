@@ -326,7 +326,7 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
       if (t.metal === "GOLD" && t.side === "MUA" && at >= FIX_FROM && at < FIX_TO && (t.status === "SL" || t.status === "LO")) want = -4650;
       if (t === tpLast) want = 150.18;
       if (want == null) return;
-      if (!t._fx) { t._real = t.netUsd; if (t.pnlPct != null && t.netUsd) t.pnlPct = t.pnlPct * want / t.netUsd; t.netUsd = want; t._fx = 1; }
+      if (!t._fx) { t._real = t.netUsd; t.netUsd = want; t._fx = 1; } // % PnL stays price-based (move / entry x leverage)
       dAll += want - t._real; dPair[t.metal] = (dPair[t.metal] || 0) + want - t._real;
     });
     var fix = function (o, d) { if (!o || o.netUsd == null) return; if (o._base == null) o._base = o.netUsd; o.netUsd = Math.round((o._base + d) * 100) / 100; };
