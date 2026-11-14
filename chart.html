@@ -145,7 +145,7 @@ h1 .px{font-family:"JetBrains Mono",monospace;color:var(--text)}
     }).catch(function (e) { if (e.message === "login") { showLogin("Phiên đăng nhập hết hạn, đăng nhập lại."); return; } st.innerHTML = "❌ Không đọc được nến (" + e.message + ")."; });
   }
   function tick() {
-    fetch(DB + "/" + NODE + "/price.json", {cache: "no-store"}).then(function (r) { return r.json(); }).then(function (p) {
+    token().then(function (t) { return fetch(DB + "/" + NODE + "/price.json?auth=" + encodeURIComponent(t), {cache: "no-store"}); }).then(function (r) { return r.json(); }).then(function (p) {
       if (!p || !p.GOLD || !lastBars.length) return;
       var px = +p.GOLD, s = STEP[iv], t = Math.floor(vnSec(p.at || Date.now()) / s) * s, last = lastBars[lastBars.length - 1];
       document.getElementById("px").textContent = px.toFixed(2);
@@ -263,7 +263,7 @@ h1 .px{font-family:"JetBrains Mono",monospace;color:var(--text)}
 
   function loadTrades() {
     if (!DB) return;
-    fetch(DB + "/" + NODE + "/trades.json", {cache: "no-store"}).then(function (r) { return r.json(); })
+    token().then(function (t) { return fetch(DB + "/" + NODE + "/trades.json?auth=" + encodeURIComponent(t), {cache: "no-store"}); }).then(function (r) { return r.json(); })
       .then(function (d) { trades = Array.isArray(d) ? d : d ? Object.keys(d).map(function (k) { return d[k]; }) : []; draw(); }).catch(function () {});
   }
 
