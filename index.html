@@ -216,10 +216,25 @@ header .tick{margin-left:auto}
 .empty{color:var(--muted);text-align:center;padding:26px;border:1px dashed var(--line);border-radius:14px}
 footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
 .gold{color:var(--gold)}.silver{color:var(--silver)}.oil{color:var(--oil)}
+#login{max-width:360px;margin:12vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+#login h2{font-size:17px;color:var(--gold);margin-bottom:14px}
+#login label{display:block;color:var(--muted);font-size:12px;margin:10px 0 4px}
+#login input{width:100%;box-sizing:border-box;background:#0a111c;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:10px;font-size:14px}
+#login button{width:100%;margin-top:16px;background:var(--gold);color:#0b1220;border:0;border-radius:9px;padding:11px;font-weight:800;font-size:14px;cursor:pointer}
+#login .err{color:var(--loss);font-size:13px;margin-top:10px;min-height:18px}
+#out{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:4px 10px;font-size:12px;cursor:pointer;margin-left:8px}
 </style>
 </head>
 <body>
-<div class="wrap">
+<form id="login" hidden>
+  <h2>🔒 Đăng nhập</h2>
+  <div id="keyRow"><label for="key">Web API Key (Firebase → Project settings, chỉ nhập lần đầu)</label><input id="key" autocomplete="off"></div>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
+  <label for="pw">Mật khẩu</label><input id="pw" type="password" autocomplete="current-password" required>
+  <button type="submit">Đăng nhập</button>
+  <div class="err" id="lerr"></div>
+</form>
+<div class="wrap" id="app" hidden>
   <header>
     <div>
       <div class="brand" id="title">TÍN HIỆU VÀNG · BẠC · DẦU</div>
@@ -289,7 +304,7 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
   <section class="list" id="list"></section>
 
   <div id="toasts" class="toasts" aria-live="polite"></div>
-  <footer>Kết quả quá khứ không bảo đảm lợi nhuận sau này. Giao dịch đòn bẩy có rủi ro mất vốn.</footer>
+  <footer>Kết quả quá khứ không bảo đảm lợi nhuận sau này. Giao dịch đòn bẩy có rủi ro mất vốn. <button id="out" type="button">Đăng xuất</button></footer>
 </div>
 
 <script>
@@ -298,6 +313,27 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
   var qs = new URLSearchParams(location.search);
   var DB = (qs.get("db") || window.CW_DB_URL || "").trim().replace(/\/+$/, "");
   var NODE = "cyberwhale";
+  // Leo 14/11: the page needs Leo's Firebase login (same as admin / chart; Rules: cyberwhale readable by his login only).
+  function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+  var KEY = ls("cw_key") || "AIzaSyCAVLJWC65TP2eOvei6nxqirjwc_RXD9rY", REFRESH = ls("cw_rt") || "", TOKEN = "", TOKEN_UNTIL = 0;
+  function signedIn(j) {
+    TOKEN = j.idToken || j.id_token; TOKEN_UNTIL = Date.now() + (+(j.expiresIn || j.expires_in || 3600) - 120) * 1000;
+    REFRESH = j.refreshToken || j.refresh_token || REFRESH; ls("cw_rt", REFRESH);
+  }
+  function token() {
+    if (TOKEN && Date.now() < TOKEN_UNTIL) return Promise.resolve(TOKEN);
+    if (!REFRESH || !KEY) return Promise.reject(new Error("login"));
+    return fetch("https://securetoken.googleapis.com/v1/token?key=" + encodeURIComponent(KEY), {method: "POST",
+      headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(REFRESH)})
+      .then(function (r) { return r.json(); }).then(function (j) { if (!j.id_token) throw new Error("login"); signedIn(j); return TOKEN; });
+  }
+  function dbUrl(t) { return DB + "/" + NODE + ".json?auth=" + encodeURIComponent(t); }
+  function showLogin(msg) {
+    document.getElementById("app").hidden = true; document.getElementById("login").hidden = false;
+    document.getElementById("keyRow").hidden = !!KEY; document.getElementById("lerr").textContent = msg || "";
+  }
+  var started = false;
+  function showApp() { document.getElementById("login").hidden = true; document.getElementById("app").hidden = false; if (!started) { started = true; start(); } }
   var state = null, tab = "open", filter = "ALL", connected = false;
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
@@ -900,8 +936,8 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
   function startPolling() {
     if (poll) return;
     var go = function () {
-      fetch(DB + "/" + NODE + ".json", {cache: "no-store"}).then(function (r) { return r.json(); })
-        .then(function (d) { state = d; render(); stamp(); }).catch(function () { setLive(false, "Mất kết nối, đang thử lại…"); });
+      token().then(function (t) { return fetch(dbUrl(t), {cache: "no-store"}); }).then(function (r) { if (r.status === 401) { TOKEN = ""; throw new Error("deny"); } return r.json(); })
+        .then(function (d) { state = d; render(); stamp(); }).catch(function (x) { setLive(false, x && x.message === "deny" ? "Tài khoản này không có quyền xem" : "Mất kết nối, đang thử lại…"); });
     };
     go(); poll = setInterval(go, 15000);
   }
@@ -909,12 +945,22 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
   function start() {
     if (!/^https:\/\//.test(DB) || DB.indexOf("DIEN-LINK") >= 0) { setLive(false, "Chưa điền link Firebase trong trang"); return; }
     if (!window.EventSource) { startPolling(); return; }
-    var es = new EventSource(DB + "/" + NODE + ".json"), fails = 0;
+    token().then(function (t) { stream(t); }).catch(function () { showLogin("Phiên đăng nhập hết hạn, đăng nhập lại."); started = false; });
+  }
+  var es = null, esTimer = null;
+  function stream(t) {
+    if (es) es.close();
+    clearTimeout(esTimer);
+    es = new EventSource(dbUrl(t)); var fails = 0;
+    // The login token lasts 1 h: reopen the stream with a fresh one before it runs out.
+    var reopen = function () { token().then(stream).catch(function () { showLogin("Phiên đăng nhập hết hạn, đăng nhập lại."); started = false; }); };
+    esTimer = setTimeout(reopen, Math.max(60e3, TOKEN_UNTIL - Date.now()));
+    es.addEventListener("auth_revoked", function () { TOKEN = ""; reopen(); });
     var onMsg = function (patch) { return function (e) { try { var m = JSON.parse(e.data); apply(m.path, m.data, patch); fails = 0; render(); stamp(); } catch (_) {} }; };
     es.addEventListener("put", onMsg(false));
     es.addEventListener("patch", onMsg(true));
-    es.addEventListener("cancel", function () { es.close(); setLive(false, "Firebase không cho đọc (kiểm tra Rules)"); });
-    es.onerror = function () { if (++fails >= 3) { es.close(); startPolling(); } else setLive(false, "Mất kết nối, đang thử lại…"); };
+    es.addEventListener("cancel", function () { es.close(); setLive(false, "Tài khoản này không có quyền xem (kiểm tra Rules)"); });
+    es.onerror = function () { if (++fails >= 3) { es.close(); clearTimeout(esTimer); startPolling(); } else setLive(false, "Mất kết nối, đang thử lại…"); };
   }
 
   document.querySelectorAll(".tab").forEach(function (b) { b.onclick = function () {
@@ -939,7 +985,19 @@ footer{color:#5b6f8a;font-size:12px;margin-top:26px;text-align:center}
   document.querySelectorAll("#filters .chip").forEach(function (b) { b.onclick = function () {
     document.querySelectorAll("#filters .chip").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); filter = b.dataset.f; render(); }; });
   setInterval(stamp, 15000);
-  start();
+  document.getElementById("login").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var k = document.getElementById("key").value.trim(); if (k) KEY = k;
+    var err = document.getElementById("lerr"); err.textContent = "Đang đăng nhập…";
+    fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + encodeURIComponent(KEY), {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({email: document.getElementById("em").value.trim(), password: document.getElementById("pw").value, returnSecureToken: true})})
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.idToken) { var m = j.error && j.error.message || ""; err.textContent = /API_KEY|API key/i.test(m) ? "Web API Key sai." : /PASSWORD|EMAIL|CREDENTIAL|USER/i.test(m) ? "Sai email hoặc mật khẩu." : "Không đăng nhập được (" + m + ")."; if (/API_KEY|API key/i.test(m)) { KEY = ""; ls("cw_key", null); document.getElementById("keyRow").hidden = false; } return; }
+        ls("cw_key", KEY); signedIn(j); document.getElementById("pw").value = ""; showApp();
+      }).catch(function (x) { err.textContent = "Lỗi mạng: " + x.message; });
+  });
+  document.getElementById("out").addEventListener("click", function () { REFRESH = ""; TOKEN = ""; ls("cw_rt", null); location.reload(); });
+  if (REFRESH) token().then(showApp).catch(function () { showLogin(); }); else showLogin();
 })();
 </script>
 <script>
